@@ -5,7 +5,7 @@ app.use(cors())
 var mysql = require('mysql');
 
 var con = mysql.createConnection({
-  host: "18.216.14.150",
+  host: "3.16.163.55",
   user: "UserManage",
   password: "jsplus1",
   database: "jsplus",
@@ -51,3 +51,5 @@ con.connect(err=> {
     console.log('Connection success, Start Mamp server at port 8080.')
   })
 })
+
+
