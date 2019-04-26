@@ -3,6 +3,12 @@ var cors = require('cors')
 const app = express()
 app.use(cors())
 var mysql = require('mysql');
+var bodyParser = require('body-parser')
+
+app.use(bodyParser.urlencoded({ extended: false }))
+ 
+// parse application/json
+app.use(bodyParser.json())
 
 var con = mysql.createConnection({
   host: "3.16.163.55",
@@ -12,7 +18,9 @@ var con = mysql.createConnection({
   // port: "8889",
   // socketPath: "localhost:/Applications/MAMP/tmp/mysql/mysql.sock"
 });
-
+app.get('/',(req,res)=>{
+  res.send("aaaaaa")
+})
 app.get('/users', (req, res) => {
     con.query('select concat(name,surname) as Name from User where Position_ID = 1', function (err, result, fields) {
       if (err) {
@@ -22,8 +30,11 @@ app.get('/users', (req, res) => {
       console.log(result);
       res.json(result)
     });
+}) 
+app.post('/period', (req,res)=>{
+  console.log(req.body)
+  res.send(200)
 })
-
 app.get('/company', (req, res) => {
   con.query('select c.Company_Name from Company c join Department d on c.Company_ID = d.Company_ID join Position p on d.Department_ID = p.Department_ID where p.Position_Name = "Tester"', function (err, result, fields) {
     if (err) {
