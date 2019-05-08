@@ -18,7 +18,7 @@ var con = mysql.createConnection({
 });
 
 app.get('/users', (req, res) => {
-  con.query('select concat(name,surname) as Name from User where Position_ID = 1', function (err, result, fields) {
+  con.query('select concat(name," ",surname) as Name from User where Position_ID = 1', function (err, result, fields) {
     if (err) {
       console.log(err)
       throw err
