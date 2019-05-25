@@ -16,7 +16,7 @@ var con = mysql.createConnection({
 });
 
 app.get('/users', (req, res) => {
-  con.query('select concat(name," ",surname) as Name from User where Position_ID = 1', function (err, result, fields) {
+  con.query('select concat(name," ",surname) as Name,User_ID from User where Position_ID = 1', function (err, result, fields) {
     if (err) {
       console.log("/user : "+err)
       throw err
@@ -24,17 +24,6 @@ app.get('/users', (req, res) => {
     res.json(result)
     res.end
   });
-})
-
-app.get('/showperiod', (req, res) => {
-  con.query('select Period_Name,Period_Time_One,Period_Time_Two from Period', function (err, result, fields) {
-    if(err){
-      console.log("/showperiod : "+err)
-      throw err
-    };
-    res.json(result)
-    res.end
-  })
 })
 
 app.get('/company', (req, res) => {
@@ -59,19 +48,83 @@ app.get('/department', (req, res) => {
   });
 })
 
-app.post('/period', (req, res) => {
-  req.body.period.forEach(e => {
-    con.query(`
-  insert into Period (Period_Name,Period_Time_One,Period_Time_Two,Period_Color) values("${e.periodName}","${e.periodOne}","${e.periodTwo}","red")
-  `, function (err, result, fields) {
-        if (err) {
-          console.log("/period : "+err)
-          res.end(result)
-          throw err;
-        }
-        res.json(result);
-      });
+app.post('/period', async (req, res) => {
+
+  let insert = "INSERT INTO Period (Period_Name,Period_Time_One,Period_Time_Two,Period_Color) VALUES ?"
+  let values = req.body.period.map(period => {
+    return [period.periodName, period.periodOne, period.periodTwo, period.color];
+  });
+  con.query(insert, [values], function(err,result) {
+    if (err) {
+      console.log("/period : "+err)
+      throw err;
+    }
+    res.json(result)
   })
+})
+
+app.get('/showperiod', (req, res) => {
+  con.query('select Period_ID,Period_Name,Period_Time_One,Period_Time_Two,Period_Color from Period', function (err, result, fields) {
+    if(err){
+      console.log("/showperiod : "+err)
+      throw err
+    };
+    res.json(result)
+  })
+})
+
+app.post('/deleteperiod', async (req, res)  =>  {
+  console.log(req.body.DeletePeriod)
+  await con.query(`
+  Delete from Schedule where Period_ID = "${req.body.DeletePeriod.Period_ID}"`, function (err, result, fields) {
+    if(err){
+      console.log("/deleteperiod : "+err)
+      throw err
+    };
+  })
+
+  await con.query(`
+  Delete from Period where Period_ID = "${req.body.DeletePeriod.Period_ID}"`, function (err, result, fields) {
+    if(err){
+      console.log("/deleteperiod : "+err)
+      throw err
+    };
+    res.json(result)
+  })
+})
+
+app.post('/schedule', (req, res) => {
+  console.log("Accept")
+
+  let insert = "INSERT INTO Schedule (User_ID, Date, Period_ID) VALUES ?"
+  let values = [];
+
+  Object.keys(req.body.addperiodscheduletodb).forEach(e => {
+    req.body.addperiodscheduletodb[e].forEach(event => {
+      let key = e.split(',');
+      values.push([ key[0], key[1], event.Period_ID])
+      
+    })
+  })
+
+  con.query(insert, [values], function (err, result, fields) {
+      if (err) {
+        console.log("/period : "+err)
+        res.end(result)
+        throw err;
+      }
+      res.json(result);
+    });
+})
+
+app.get('/showschedule', (req, res) => {
+  con.query('select s.Period_ID,s.User_ID,s.Date,p.Period_ID,p.Period_Time_One,p.Period_Time_Two,p.Period_Color from Schedule s join Period p on s.Period_ID = p.Period_ID', function (err, result, fields) {
+    if (err) {
+      console.log("/showschedule : "+err)
+      throw err
+    };
+    res.json(result)
+  });
 })
 
 con.connect(err => {
