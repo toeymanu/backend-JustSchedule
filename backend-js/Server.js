@@ -127,6 +127,17 @@ app.get('/showschedule', (req, res) => {
   });
 })
 
+app.post('/schedule/delete', (req,res) => {
+  console.log(req.body.DeletePeriodDB)
+  con.query(`Delete FROM Schedule where User_ID = "${req.body.DeletePeriodDB.User_ID}" and Date = "${req.body.DeletePeriodDB.Date}" and Period_ID = "${req.body.DeletePeriodDB.Period_ID}"` , function (err, result, fields) {
+    if(err){
+      console.log("/deleteperiod : "+err)
+      throw err
+    };
+    res.json(result)
+  }) 
+})
+
 con.connect(err => {
   app.listen(8080, () => {
     console.log('Connection success, Start server at port 8080.')
