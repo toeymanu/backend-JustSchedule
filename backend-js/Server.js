@@ -11,10 +11,10 @@ app.use(bodyParser.json())
 
 
 var con = mysql.createConnection({
-  // host: "3.16.163.55",
+  // host: "13.59.253.146",
   // user: "UserManage",
   // password: "jsplus1",
-  // database: "jsplus",        
+  // database: "jsplus"
   //ในเฟช
   host: process.env.DB_HOST,
   user: process.env.DB_USER,
@@ -22,7 +22,7 @@ var con = mysql.createConnection({
   database: process.env.DB_DATABASE
 });
 
-console.log(process.env.DB_HOST)
+// console.log(process.env.DB_HOST)
 
 app.get('/users', (req, res) => {
   con.query('select concat(name," ",surname) as Name,User_ID from User where Position_ID = 1', function (err, result, fields) {
@@ -31,6 +31,7 @@ app.get('/users', (req, res) => {
       throw err
     };
     res.json(result)
+    console.log(result);
   });
 })
 
@@ -149,6 +150,4 @@ con.connect(err => {
   app.listen(8080, () => {
     console.log('Connection success, Start server at port 8080.')
   })
-})
-
-
+});
