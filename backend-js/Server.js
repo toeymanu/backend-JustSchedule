@@ -6,6 +6,8 @@ var mysql = require('mysql');
 require('dotenv').config();
 var bodyParser = require('body-parser')
 const jwt = require("jwt-simple");
+var jwtDecode = require('jwt-decode');
+var userTk = '';
 
 app.use(bodyParser.urlencoded({ extended: false }))
 app.use(bodyParser.json())
@@ -18,7 +20,28 @@ var con = mysql.createConnection({
   database: process.env.DB_DATABASE
 });
 
-app.get('/users', (req, res) => {
+
+/*------------------------------Token------------------------------------*/
+app.post('/tk/auth', (req, res, next) => {
+  userTk = req.body.tkAuth
+})
+
+function MiddleWare(req, res, next) {
+  if(userTk != null){
+    if(userTk != "undefined"){
+      var decoded = jwtDecode(userTk);
+      console.log(decoded.sub)
+      // req.user = decoded.sub;
+      next();
+    }
+  }else{
+    res.json("Not Have Token");
+  }
+}
+
+/*------------------------------Select------------------------------------*/
+
+app.get('/users', MiddleWare, (req, res) => {
   con.query('select concat(name," ",surname) as Name,User_ID from User where Position_ID = 1', function (err, result, fields) {
     if (err) {
       console.log("/user : " + err)
@@ -163,6 +186,7 @@ app.get('/company/select', (req, res) => {
   });
 })
 
+
 /*------------------------------Login------------------------------------*/
 const CheckUsernameMiddleWare = (req, res, next) => {
   var found = false;
@@ -181,11 +205,13 @@ const CheckUsernameMiddleWare = (req, res, next) => {
 }
 
 const LoginMiddleWare = (req, res, next) => {
-  con.query(`select username,password from User where username = "${req.body.username}"`, function (err, result, fields) {
+  con.query(`select u.username,u.password,p.Position_Name,d.Department_ID,p.Position_ID,c.Company_ID from User u JOIN Position p ON u.Position_ID = p.Position_ID JOIN Department d ON p.Department_ID = d.Department_ID JOIN Company c ON d.Company_ID = c.Company_ID where u.username = "${req.body.username}"`, function (err, result, fields) {
     if (err) {
       throw err;
     }
     if (req.body.username === result[0].username && req.body.password == result[0].password) {
+      console.log(result)
+      req.userPosition = result[0].Position_Name
       next();
     } else {
       res.json("Wrong Username or Password")
@@ -196,12 +222,14 @@ const LoginMiddleWare = (req, res, next) => {
 app.post("/users/authenticate", CheckUsernameMiddleWare, LoginMiddleWare, (req, res) => {
   const payload = {
     sub: req.body.username,
-    iat: new Date().getTime()
+    iat: new Date().getTime(),
+    position: req.userPosition
   };
   const SECRET = process.env.SECRETKEYS;
-  res.json({ tk: jwt.encode(payload, SECRET), name: req.body.username })
+  res.json({ tk: jwt.encode(payload, SECRET) })
 })
 
+/*------------------------------Connect DB------------------------------------*/
 con.connect(err => {
   app.listen(8080, () => {
     console.log('Connection success, Start server at port 8080.')
