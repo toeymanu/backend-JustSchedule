@@ -230,8 +230,43 @@ app.post("/users/authenticate", CheckUsernameMiddleWare, LoginMiddleWare, (req, 
 })
 
 /*------------------------------Connect DB------------------------------------*/
+app.post('/company/insert', (req, res) => {
+  console.log("ACCEPT")
+  console.log(req.body.createcompany)
+  console.log(req.body.companypicture)
+  con.query(`INSERT INTO Company (Company_Name, Company_Mail,Company_Tel,Company_Picture) VALUES ("${req.body.createcompany.companyName}","${req.body.createcompany.companyEmail}","${req.body.createcompany.companyTel}","${req.body.companypicture}")`, function (err, result, fields){
+    if(err){
+      throw err
+    };
+    res.json(result);
+  })
+})
+
+app.get('/company/select', (req, res) => {
+  con.query('select * from Company c where c.Company_ID = 11 ', function (err, result, fields) {
+    if (err) {
+      console.log("/company/select : " + err)
+      throw err
+    };
+    res.json(result)
+  });
+})
+
+
 con.connect(err => {
   app.listen(8080, () => {
     console.log('Connection success, Start server at port 8080.')
   })
 });
+
+app.post('/department/insert', (req, res) => {
+  console.log("ACCEPT")
+  console.log(req.body.createdepartment)
+  console.log(req.body.departmentpicture)
+  con.query(`INSERT INTO Department (Department_Name,Department_TelNo,Department_Picture) VALUES ("${req.body.createdepartment.departmentName}","${req.body.createdepartment.departmentTel}","${req.body.departmentpicture}")`, function (err, result, fields){
+    if(err){
+      throw err
+    };
+    res.json(result);
+  })
+})
