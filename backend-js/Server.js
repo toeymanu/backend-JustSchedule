@@ -26,6 +26,7 @@ function MiddleWare(req, res, next) {
   if(req.headers.tkauth != null){
     if(req.headers.tkauth != "undefined"){
       var decoded = jwtDecode(req.headers.tkauth);
+      req.userName = decoded.sub;
       req.posID = decoded.posID;
       req.depID = decoded.depID;
       req.compID = decoded.compID;
@@ -71,7 +72,7 @@ app.get('/department', MiddleWare,(req, res) => {
   });
 })
 
-app.get('/showperiod', MiddleWare,async (req, res) => {
+app.get('/showperiod', MiddleWare, async (req, res) => {
   await con.query('select * from Period', function (err, result, fields) {
     if (err) {
       console.log("/showperiod : " + err)
@@ -79,6 +80,17 @@ app.get('/showperiod', MiddleWare,async (req, res) => {
     };
     res.json(result)
   })
+})
+
+app.get('/name', MiddleWare,(req, res) => {
+  con.query(`select name,surname from User where username = "${req.userName}"`, 
+  function (err, result, fields) {
+    if (err) {
+      console.log("/name : " + err)
+      throw err
+    };
+    res.json(result)
+  });
 })
 
 /*------------------------------Schedule------------------------------------*/
@@ -161,7 +173,11 @@ app.post('/schedule/delete', (req, res) => {
 })
 
 /*------------------------------Register------------------------------------*/
-app.post('/register', (req, res) => {
+const regisMiddleware = (req,res,next) => {
+    
+}
+
+app.post('/register', regisMiddleware, (req, res) => {
   con.query(`INSERT INTO User (UserName, Password) VALUES ("${req.body.register.username}","${req.body.register.password}")`, function (err, result, fields) {
     if (err) {
       console.log("/register : " + err)
