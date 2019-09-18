@@ -22,16 +22,13 @@ var con = mysql.createConnection({
 
 
 /*------------------------------Token------------------------------------*/
-app.post('/tk/auth', (req, res, next) => {
-  userTk = req.body.tkAuth
-})
-
 function MiddleWare(req, res, next) {
-  if(userTk != null){
-    if(userTk != "undefined"){
-      var decoded = jwtDecode(userTk);
-      console.log(decoded.sub)
-      // req.user = decoded.sub;
+  if(req.headers.tkauth != null){
+    if(req.headers.tkauth != "undefined"){
+      var decoded = jwtDecode(req.headers.tkauth);
+      req.posID = decoded.posID;
+      req.depID = decoded.depID;
+      req.compID = decoded.compID;
       next();
     }
   }else{
@@ -42,7 +39,8 @@ function MiddleWare(req, res, next) {
 /*------------------------------Select------------------------------------*/
 
 app.get('/users', MiddleWare, (req, res) => {
-  con.query('select concat(name," ",surname) as Name,User_ID from User where Position_ID = 1', function (err, result, fields) {
+  con.query(`select concat(name," ",surname) as Name,User_ID from User u JOIN Position p ON u.Position_ID = p.Position_ID JOIN Department d ON p.Department_ID = d.Department_ID where d.Department_ID = "${req.depID}"`, 
+  function (err, result, fields) {
     if (err) {
       console.log("/user : " + err)
       throw err
@@ -51,8 +49,9 @@ app.get('/users', MiddleWare, (req, res) => {
   });
 })
 
-app.get('/company', (req, res) => {
-  con.query('select c.Company_Name from Company c join Department d on c.Company_ID = d.Company_ID join Position p on d.Department_ID = p.Department_ID where p.Position_Name = "Tester"', function (err, result, fields) {
+app.get('/company', MiddleWare,(req, res) => {
+  con.query(`select Company_Name from Company where Company_ID = "${req.compID}"`, 
+  function (err, result, fields) {
     if (err) {
       console.log("/company : " + err)
       throw err
@@ -61,8 +60,9 @@ app.get('/company', (req, res) => {
   });
 })
 
-app.get('/department', (req, res) => {
-  con.query('select d.Department_Name from Company c join Department d on c.Company_ID = d.Company_ID join Position p on d.Department_ID = p.Department_ID where p.Position_Name = "Tester"', function (err, result, fields) {
+app.get('/department', MiddleWare,(req, res) => {
+  con.query(`select Department_Name from Department where Department_ID = "${req.depID}"`, 
+  function (err, result, fields) {
     if (err) {
       console.log("/department : " + err)
       throw err
@@ -71,7 +71,7 @@ app.get('/department', (req, res) => {
   });
 })
 
-app.get('/showperiod', async (req, res) => {
+app.get('/showperiod', MiddleWare,async (req, res) => {
   await con.query('select * from Period', function (err, result, fields) {
     if (err) {
       console.log("/showperiod : " + err)
@@ -81,6 +81,7 @@ app.get('/showperiod', async (req, res) => {
   })
 })
 
+/*------------------------------Schedule------------------------------------*/
 app.post('/period', async (req, res) => {
 
   let insert = "INSERT INTO Period (Period_Name,Period_Time_One,Period_Time_Two,Period_Color) VALUES ?"
@@ -106,6 +107,7 @@ app.get('/showschedule', (req, res) => {
   });
 })
 
+/*------------------------------DELETE------------------------------------*/
 app.post('/deleteperiod', async (req, res) => {
   await con.query(`
   Delete from Schedule where Period_ID = "${req.body.DeletePeriod.Period_ID}"`, function (err, result, fields) {
@@ -158,6 +160,7 @@ app.post('/schedule/delete', (req, res) => {
   })
 })
 
+/*------------------------------Register------------------------------------*/
 app.post('/register', (req, res) => {
   con.query(`INSERT INTO User (UserName, Password) VALUES ("${req.body.register.username}","${req.body.register.password}")`, function (err, result, fields) {
     if (err) {
@@ -168,15 +171,7 @@ app.post('/register', (req, res) => {
   })
 })
 
-app.post('/company/insert', (req, res) => {
-  con.query(`INSERT INTO Company (Company_Name, Company_Mail,Company_Tel,Company_Picture) VALUES ("${req.body.createcompany.companyName}","${req.body.createcompany.companyEmail}","${req.body.createcompany.companyTel}","${req.body.companypicture}")`, function (err, result, fields) {
-    if (err) {
-      throw err
-    };
-    res.json(result);
-  })
-})
-
+/*------------------------------Company------------------------------------*/
 app.get('/company/select', (req, res) => {
   con.query('select * from Company c where c.Company_ID = 11 ', function (err, result, fields) {
     if (err) {
@@ -184,6 +179,15 @@ app.get('/company/select', (req, res) => {
     };
     res.json(result)
   });
+})
+
+app.post('/company/insert', (req, res) => {
+  con.query(`INSERT INTO Company (Company_Name, Company_Mail,Company_Tel,Company_Picture) VALUES ("${req.body.createcompany.companyName}","${req.body.createcompany.companyEmail}","${req.body.createcompany.companyTel}","${req.body.companypicture}")`, function (err, result, fields) {
+    if (err) {
+      throw err
+    };
+    res.json(result);
+  })
 })
 
 
@@ -205,13 +209,17 @@ const CheckUsernameMiddleWare = (req, res, next) => {
 }
 
 const LoginMiddleWare = (req, res, next) => {
-  con.query(`select u.username,u.password,p.Position_Name,d.Department_ID,p.Position_ID,c.Company_ID from User u JOIN Position p ON u.Position_ID = p.Position_ID JOIN Department d ON p.Department_ID = d.Department_ID JOIN Company c ON d.Company_ID = c.Company_ID where u.username = "${req.body.username}"`, function (err, result, fields) {
+  con.query(`select u.username,u.password,p.Position_Name,p.Position_ID,d.Department_ID,p.Position_ID,c.Company_ID from User u JOIN Position p ON u.Position_ID = p.Position_ID JOIN Department d ON p.Department_ID = d.Department_ID JOIN Company c ON d.Company_ID = c.Company_ID where u.username = "${req.body.username}"`, function (err, result, fields) {
     if (err) {
       throw err;
     }
     if (req.body.username === result[0].username && req.body.password == result[0].password) {
-      console.log(result)
+      // req.name = result[0].name,
+      // req.surname = result[0].surname,
       req.userPosition = result[0].Position_Name
+      req.userPosID = result[0].Position_ID
+      req.userDepartID = result[0].Department_ID
+      req.userCompID = result[0].Company_ID
       next();
     } else {
       res.json("Wrong Username or Password")
@@ -223,10 +231,13 @@ app.post("/users/authenticate", CheckUsernameMiddleWare, LoginMiddleWare, (req, 
   const payload = {
     sub: req.body.username,
     iat: new Date().getTime(),
-    position: req.userPosition
+    position: req.userPosition,
+    posID: req.userPosID,
+    depID: req.userDepartID,
+    compID: req.userCompID
   };
   const SECRET = process.env.SECRETKEYS;
-  res.json({ tk: jwt.encode(payload, SECRET) })
+  res.json({ tk: jwt.encode(payload, SECRET)})
 })
 
 /*------------------------------Connect DB------------------------------------*/
