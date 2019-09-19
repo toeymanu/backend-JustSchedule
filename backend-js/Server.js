@@ -33,14 +33,14 @@ function MiddleWare(req, res, next) {
       next();
     }
   }else{
-    res.json("Not Have Token");
+    res.status(404).send('Not Found');
   }
 }
 
 /*------------------------------Select------------------------------------*/
 
 app.get('/users', MiddleWare, (req, res) => {
-  con.query(`select concat(name," ",surname) as Name,User_ID from User u JOIN Position p ON u.Position_ID = p.Position_ID JOIN Department d ON p.Department_ID = d.Department_ID where d.Department_ID = "${req.depID}"`, 
+  con.query(`select concat(name," ",surname) as Name from User u JOIN Position p ON u.Position_ID = p.Position_ID JOIN Department d ON p.Department_ID = d.Department_ID where d.Department_ID = "${req.depID}"`, 
   function (err, result, fields) {
     if (err) {
       console.log("/user : " + err)
@@ -174,7 +174,13 @@ app.post('/schedule/delete', (req, res) => {
 
 /*------------------------------Register------------------------------------*/
 const regisMiddleware = (req,res,next) => {
-    
+    con.query(`select UserName from User where UserName = "${req.body.register.username}"`, function (err,result,fields){
+      if(result.length == 0){
+        // next();
+      }else{
+        res.json("Username is already exists!!!");
+      }
+    })
 }
 
 app.post('/register', regisMiddleware, (req, res) => {
@@ -230,8 +236,6 @@ const LoginMiddleWare = (req, res, next) => {
       throw err;
     }
     if (req.body.username === result[0].username && req.body.password == result[0].password) {
-      // req.name = result[0].name,
-      // req.surname = result[0].surname,
       req.userPosition = result[0].Position_Name
       req.userPosID = result[0].Position_ID
       req.userDepartID = result[0].Department_ID
