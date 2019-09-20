@@ -7,7 +7,6 @@ require('dotenv').config();
 var bodyParser = require('body-parser')
 const jwt = require("jwt-simple");
 var jwtDecode = require('jwt-decode');
-var userTk = '';
 
 app.use(bodyParser.urlencoded({ extended: false }))
 app.use(bodyParser.json())
@@ -23,16 +22,14 @@ var con = mysql.createConnection({
 
 /*------------------------------Token------------------------------------*/
 function MiddleWare(req, res, next) {
-  if(req.headers.tkauth != null){
-    if(req.headers.tkauth != "undefined"){
-      var decoded = jwtDecode(req.headers.tkauth);
-      req.userName = decoded.sub;
-      req.posID = decoded.posID;
-      req.depID = decoded.depID;
-      req.compID = decoded.compID;
-      next();
-    }
-  }else{
+  if (req.headers.tkauth != "null" || req.headers.tkauth != "undefined") {
+    var decoded = jwtDecode(req.headers.tkauth);
+    req.userName = decoded.sub;
+    req.posID = decoded.posID;
+    req.depID = decoded.depID;
+    req.compID = decoded.compID;
+    next();
+  }else {
     res.status(404).send('Not Found');
   }
 }
@@ -40,40 +37,40 @@ function MiddleWare(req, res, next) {
 /*------------------------------Select------------------------------------*/
 
 app.get('/users', MiddleWare, (req, res) => {
-  con.query(`select concat(name," ",surname) as Name from User u JOIN Position p ON u.Position_ID = p.Position_ID JOIN Department d ON p.Department_ID = d.Department_ID where d.Department_ID = "${req.depID}"`, 
-  function (err, result, fields) {
-    if (err) {
-      console.log("/user : " + err)
-      throw err
-    };
-    res.json(result)
-  });
+  con.query(`select concat(name," ",surname) as Name, User_ID from User u JOIN Position p ON u.Position_ID = p.Position_ID JOIN Department d ON p.Department_ID = d.Department_ID where d.Department_ID = "${req.depID}"`,
+    function (err, result, fields) {
+      if (err) {
+        console.log("/user : " + err)
+        throw err
+      };
+      res.json(result)
+    });
 })
 
-app.get('/company', MiddleWare,(req, res) => {
-  con.query(`select Company_Name from Company where Company_ID = "${req.compID}"`, 
-  function (err, result, fields) {
-    if (err) {
-      console.log("/company : " + err)
-      throw err
-    };
-    res.json(result)
-  });
+app.get('/company', MiddleWare, (req, res) => {
+  con.query(`select Company_Name from Company where Company_ID = "${req.compID}"`,
+    function (err, result, fields) {
+      if (err) {
+        console.log("/company : " + err)
+        throw err
+      };
+      res.json(result)
+    });
 })
 
-app.get('/department', MiddleWare,(req, res) => {
-  con.query(`select Department_Name from Department where Department_ID = "${req.depID}"`, 
-  function (err, result, fields) {
-    if (err) {
-      console.log("/department : " + err)
-      throw err
-    };
-    res.json(result)
-  });
+app.get('/department', MiddleWare, (req, res) => {
+  con.query(`select Department_Name from Department where Department_ID = "${req.depID}"`,
+    function (err, result, fields) {
+      if (err) {
+        console.log("/department : " + err)
+        throw err
+      };
+      res.json(result)
+    });
 })
 
-app.get('/showperiod', MiddleWare, async (req, res) => {
-  await con.query('select * from Period', function (err, result, fields) {
+app.get('/showperiod', MiddleWare, (req, res) => {
+  con.query(`select * from Period p Join Schedule s on s.Period_ID = p.Period_ID join User u ON s.User_ID = u.User_ID JOIN Position o ON u.Position_ID = o.Position_ID JOIN Department d ON o.Department_ID = d.Department_ID where d.Department_ID = "${req.depID}"`, function (err, result, fields) {
     if (err) {
       console.log("/showperiod : " + err)
       throw err
@@ -82,15 +79,15 @@ app.get('/showperiod', MiddleWare, async (req, res) => {
   })
 })
 
-app.get('/name', MiddleWare,(req, res) => {
-  con.query(`select name,surname from User where username = "${req.userName}"`, 
-  function (err, result, fields) {
-    if (err) {
-      console.log("/name : " + err)
-      throw err
-    };
-    res.json(result)
-  });
+app.get('/name', MiddleWare, (req, res) => {
+  con.query(`select name,surname from User where username = "${req.userName}"`,
+    function (err, result, fields) {
+      if (err) {
+        console.log("/name : " + err)
+        throw err
+      };
+      res.json(result)
+    });
 })
 
 /*------------------------------Schedule------------------------------------*/
@@ -109,14 +106,15 @@ app.post('/period', async (req, res) => {
   })
 })
 
-app.get('/showschedule', (req, res) => {
-  con.query('select s.Period_ID,s.User_ID,s.Date,p.Period_ID,p.Period_Time_One,p.Period_Time_Two,p.Period_Color from Schedule s join Period p on s.Period_ID = p.Period_ID', function (err, result, fields) {
-    if (err) {
-      console.log("/showschedule : " + err)
-      throw err
-    };
-    res.json(result)
-  });
+app.get('/showschedule', MiddleWare, (req, res) => {
+  con.query(`select s.Period_ID,s.User_ID,s.Date,p.Period_ID,p.Period_Time_One,p.Period_Time_Two,p.Period_Color from Schedule s join Period p on s.Period_ID = p.Period_ID join User u ON s.User_ID = u.User_ID JOIN Position o ON u.Position_ID = o.Position_ID JOIN Department d ON o.Department_ID = d.Department_ID where d.Department_ID = "${req.depID}"`,
+    function (err, result, fields) {
+      if (err) {
+        console.log("/showschedule : " + err)
+        throw err
+      };
+      res.json(result)
+    });
 })
 
 /*------------------------------DELETE------------------------------------*/
@@ -173,14 +171,14 @@ app.post('/schedule/delete', (req, res) => {
 })
 
 /*------------------------------Register------------------------------------*/
-const regisMiddleware = (req,res,next) => {
-    con.query(`select UserName from User where UserName = "${req.body.register.username}"`, function (err,result,fields){
-      if(result.length == 0){
-        // next();
-      }else{
-        res.json("Username is already exists!!!");
-      }
-    })
+const regisMiddleware = (req, res, next) => {
+  con.query(`select UserName from User where UserName = "${req.body.register.username}"`, function (err, result, fields) {
+    if (result.length < 1) {
+      next();
+    } else {
+      res.json("Username is already exists!!!");
+    }
+  })
 }
 
 app.post('/register', regisMiddleware, (req, res) => {
@@ -214,40 +212,26 @@ app.post('/company/insert', (req, res) => {
 
 
 /*------------------------------Login------------------------------------*/
-const CheckUsernameMiddleWare = (req, res, next) => {
-  var found = false;
-  Boolean(found);
-  con.query(`select username from User`, function (err, result, fields) {
-    result.forEach(e => {
-      if (e.username === req.body.username) {
-        found = true;
-        next();
+const LoginMiddleWare = (req, res, next) => {
+  con.query(`select u.username,u.password,p.Position_Name,p.Position_ID,d.Department_ID,p.Position_ID,c.Company_ID from User u JOIN Position p ON u.Position_ID = p.Position_ID JOIN Department d ON p.Department_ID = d.Department_ID JOIN Company c ON d.Company_ID = c.Company_ID where u.username = "${req.body.username}"`,
+    function (err, result, fields) {
+      if (result.length >= 1) {
+        if (req.body.username === result[0].username && req.body.password == result[0].password) {
+          req.userPosition = result[0].Position_Name
+          req.userPosID = result[0].Position_ID
+          req.userDepartID = result[0].Department_ID
+          req.userCompID = result[0].Company_ID
+          next();
+        } else {
+          res.json("Wrong Username or Password")
+        }
+      } else {
+        res.json("Wrong Username or Password")
       }
     })
-    if (found != true) {
-      res.json("Wrong Username or Password")
-    }
-  })
-}
-
-const LoginMiddleWare = (req, res, next) => {
-  con.query(`select u.username,u.password,p.Position_Name,p.Position_ID,d.Department_ID,p.Position_ID,c.Company_ID from User u JOIN Position p ON u.Position_ID = p.Position_ID JOIN Department d ON p.Department_ID = d.Department_ID JOIN Company c ON d.Company_ID = c.Company_ID where u.username = "${req.body.username}"`, function (err, result, fields) {
-    if (err) {
-      throw err;
-    }
-    if (req.body.username === result[0].username && req.body.password == result[0].password) {
-      req.userPosition = result[0].Position_Name
-      req.userPosID = result[0].Position_ID
-      req.userDepartID = result[0].Department_ID
-      req.userCompID = result[0].Company_ID
-      next();
-    } else {
-      res.json("Wrong Username or Password")
-    }
-  })
 };
 
-app.post("/users/authenticate", CheckUsernameMiddleWare, LoginMiddleWare, (req, res) => {
+app.post("/users/authenticate", LoginMiddleWare, (req, res) => {
   const payload = {
     sub: req.body.username,
     iat: new Date().getTime(),
@@ -257,7 +241,7 @@ app.post("/users/authenticate", CheckUsernameMiddleWare, LoginMiddleWare, (req, 
     compID: req.userCompID
   };
   const SECRET = process.env.SECRETKEYS;
-  res.json({ tk: jwt.encode(payload, SECRET)})
+  res.json({ tk: jwt.encode(payload, SECRET) })
 })
 
 /*------------------------------Connect DB------------------------------------*/
