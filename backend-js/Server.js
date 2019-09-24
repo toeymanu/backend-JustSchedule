@@ -29,8 +29,18 @@ function MiddleWare(req, res, next) {
     req.depID = decoded.depID;
     req.compID = decoded.compID;
     next();
-  }else {
+  } else {
     res.status(404).send('Not Found');
+  }
+}
+
+function nameMiddleware(req,res,next){
+  if(req.headers.tkauth != "null" || req.headers.tkauth != "undefined"){
+    var decoded = jwtDecode(req.headers.tkauth);
+    req.userName = decoded.sub;
+    next();
+  }else{
+    res.status(404).send("Not Found");
   }
 }
 
@@ -79,8 +89,8 @@ app.get('/showperiod', MiddleWare, (req, res) => {
   })
 })
 
-app.get('/name', MiddleWare, (req, res) => {
-  con.query(`select name,surname from User where username = "${req.userName}"`,
+app.get('/name', nameMiddleware, (req, res) => {
+  con.query(`select name,surname from User where UserName = "${req.userName}"`,
     function (err, result, fields) {
       if (err) {
         console.log("/name : " + err)
@@ -121,20 +131,20 @@ app.get('/showschedule', MiddleWare, (req, res) => {
 app.post('/deleteperiod', async (req, res) => {
   await con.query(`
   Delete from Schedule where Period_ID = "${req.body.DeletePeriod.Period_ID}"`, function (err, result, fields) {
-      if (err) {
-        console.log("/deleteperiod : " + err)
-        throw err
-      };
-    })
+    if (err) {
+      console.log("/deleteperiod : " + err)
+      throw err
+    };
+  })
 
   await con.query(`
   Delete from Period where Period_ID = "${req.body.DeletePeriod.Period_ID}"`, function (err, result, fields) {
-      if (err) {
-        console.log("/deleteperiod : " + err)
-        throw err
-      };
-      res.json(result)
-    })
+    if (err) {
+      console.log("/deleteperiod : " + err)
+      throw err
+    };
+    res.json(result)
+  })
 })
 
 app.post('/schedule', (req, res) => {
@@ -213,14 +223,13 @@ app.post('/company/insert', (req, res) => {
 
 /*------------------------------Login------------------------------------*/
 const LoginMiddleWare = (req, res, next) => {
-  con.query(`select u.username,u.password,p.Position_Name,p.Position_ID,d.Department_ID,p.Position_ID,c.Company_ID from User u JOIN Position p ON u.Position_ID = p.Position_ID JOIN Department d ON p.Department_ID = d.Department_ID JOIN Company c ON d.Company_ID = c.Company_ID where u.username = "${req.body.username}"`,
+  con.query(`select UserName, Password from User where UserName = "${req.body.username}"`,
     function (err, result, fields) {
+      if (err) {
+        throw err;
+      }
       if (result.length >= 1) {
-        if (req.body.username === result[0].username && req.body.password == result[0].password) {
-          req.userPosition = result[0].Position_Name
-          req.userPosID = result[0].Position_ID
-          req.userDepartID = result[0].Department_ID
-          req.userCompID = result[0].Company_ID
+        if (req.body.username === result[0].UserName && req.body.password == result[0].Password) {
           next();
         } else {
           res.json("Wrong Username or Password")
@@ -229,20 +238,55 @@ const LoginMiddleWare = (req, res, next) => {
         res.json("Wrong Username or Password")
       }
     })
-};
+}
 
 app.post("/users/authenticate", LoginMiddleWare, (req, res) => {
   const payload = {
     sub: req.body.username,
     iat: new Date().getTime(),
-    position: req.userPosition,
-    posID: req.userPosID,
-    depID: req.userDepartID,
-    compID: req.userCompID
   };
   const SECRET = process.env.SECRETKEYS;
-  res.json({ tk: jwt.encode(payload, SECRET) })
-})
+  res.json({ sc: jwt.encode(payload, SECRET) })
+});
+
+const CheckMiddleWare = (req, res, next) => {
+  con.query(`select name,surname,PhoneNumber,Email from User where UserName = "${req.body.username}"`, 
+  function (err,result, fields){
+    if(result[0].name != null){
+      con.query(`select p.Position_Name,p.Position_ID,d.Department_ID,p.Position_ID,c.Company_ID from User u JOIN Position p ON u.Position_ID = p.Position_ID JOIN Department d ON p.Department_ID = d.Department_ID JOIN Company c ON d.Company_ID = c.Company_ID where u.UserName = "${req.body.username}"`,
+        function (err, results, fields) {
+          if (err) {
+            throw err;
+          }
+          if (results.length >= 1) {
+              req.userPosition = results[0].Position_Name
+              req.userPosID = results[0].Position_ID
+              req.userDepartID = results[0].Department_ID
+              req.userCompID = results[0].Company_ID
+              next();
+          } else {
+            res.json("Not have Position")
+          }
+        })
+    }else{
+      res.json("Not have Profile")
+    }
+  })
+};
+
+  app.post("/users/requesttk", CheckMiddleWare, (req, res) => {
+    const payload = {
+      sub: req.body.username,
+      iat: new Date().getTime(),
+      position: req.userPosition,
+      posID: req.userPosID,
+      depID: req.userDepartID,
+      compID: req.userCompID
+    };
+    const SECRET = process.env.SECRETKEYS;
+    res.json({ tk: jwt.encode(payload, SECRET) })
+  });
+
 
 /*------------------------------Connect DB------------------------------------*/
 con.connect(err => {
