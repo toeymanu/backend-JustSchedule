@@ -44,6 +44,16 @@ function nameMiddleware(req, res, next) {
   }
 }
 
+function managerNotificationID(req, res, next) {
+  if (req.headers.tkauth != "null" || req.headers.tkauth != "undefined") {
+    var decoded = jwtDecode(req.headers.tkauth);
+    con.query(`select User_ID From User where UserName = "${decoded.sub}"`, function (err, result, fields) {
+      req.managerNotiID = result[0].User_ID;
+      next();
+    })
+  }
+}
+
 /*------------------------------Select------------------------------------*/
 
 app.get('/users', MiddleWare, (req, res) => {
@@ -113,18 +123,45 @@ app.get('/name', nameMiddleware, (req, res) => {
     });
 })
 
-/*------------------------------Schedule------------------------------------*/
-app.post('/period', MiddleWare, async (req, res) => {
+app.get("/notification", managerNotificationID, (req, res) => {
+  con.query(`select concat(u.name," ",u.surname), s.Date, s.Month, p.Period_Time_One, p.Period_Time_Two From Notification n JOIN Request r ON n.Request_ID = r.Request_ID JOIN RequestStatus rs ON r.RequestStatus_ID = rs.RequestStatus_ID JOIN RequestFor f ON r.Request_ID = f.Request_ID JOIN Schedule s ON f.Schedule_ID = s.Schedule_ID JOIN Period p ON s.Period_ID = p.Period_ID JOIN User u ON s.User_ID = u.User_ID WHERE n.User_ID = "${req.managerNotiID}" and rs.RequestStatus_Name = "pending"`,
+    function (err, result, fields) {
+      if (err) {
+        console.log("/notification " + err)
+        throw err;
+      }
+      res.json(result);
+    })
+})
 
-  let insert = `INSERT INTO Period (Period_Name,Period_Time_One,Period_Time_Two,Period_Color, Department_ID) VALUES ?`
-  let values = req.body.period.map(period => {
-    return [period.periodName, period.periodOne, period.periodTwo, period.color, req.depID];
-  });
-  con.query(insert, [values], function (err, result) {
+/*------------------------------Schedule------------------------------------*/
+app.post('/schedule', (req, res) => {
+  let insert = "INSERT INTO Schedule (User_ID, Date, Month, Period_ID) VALUES ?"
+  let values = [];
+
+  Object.keys(req.body.addperiodscheduletodb).forEach(e => {
+    req.body.addperiodscheduletodb[e].forEach(event => {
+      let key = e.split(',');
+      values.push([key[0], key[1], req.body.month, event.Period_ID])
+    })
+  })
+
+  con.query(insert, [values], function (err, result, fields) {
     if (err) {
-      console.log("/period : " + err)
+      console.log("/schedule : " + err)
+      res.end(result)
       throw err;
     }
+    res.json(result);
+  });
+})
+
+app.post('/schedule/delete', (req, res) => {
+  con.query(`Delete FROM Schedule where User_ID = "${req.body.DeletePeriodDB.User_ID}" and Date = "${req.body.DeletePeriodDB.Date}" and Period_ID = "${req.body.DeletePeriodDB.Period_ID}"`, function (err, result, fields) {
+    if (err) {
+      console.log("/deleteperiod : " + err)
+      throw err
+    };
     res.json(result)
   })
 })
@@ -140,7 +177,22 @@ app.get('/showschedule', MiddleWare, (req, res) => {
     });
 })
 
-/*------------------------------DELETE------------------------------------*/
+/*------------------------------Period------------------------------------*/
+app.post('/period', MiddleWare, async (req, res) => {
+
+  let insert = `INSERT INTO Period (Period_Name,Period_Time_One,Period_Time_Two,Period_Color, Department_ID) VALUES ?`
+  let values = req.body.period.map(period => {
+    return [period.periodName, period.periodOne, period.periodTwo, period.color, req.depID];
+  });
+  con.query(insert, [values], function (err, result) {
+    if (err) {
+      console.log("/period : " + err)
+      throw err;
+    }
+    res.json(result)
+  })
+})
+
 app.post('/deleteperiod', async (req, res) => {
   await con.query(`
   Delete from Schedule where Period_ID = "${req.body.DeletePeriod.Period_ID}"`, function (err, result, fields) {
@@ -152,39 +204,6 @@ app.post('/deleteperiod', async (req, res) => {
 
   await con.query(`
   Delete from Period where Period_ID = "${req.body.DeletePeriod.Period_ID}"`, function (err, result, fields) {
-    if (err) {
-      console.log("/deleteperiod : " + err)
-      throw err
-    };
-    res.json(result)
-  })
-})
-
-app.post('/schedule', (req, res) => {
-  let insert = "INSERT INTO Schedule (User_ID, Date, Month, Period_ID) VALUES ?"
-  let values = [];
-
-  Object.keys(req.body.addperiodscheduletodb).forEach(e => {
-    req.body.addperiodscheduletodb[e].forEach(event => {
-      let key = e.split(',');
-      values.push([key[0], key[1], req.body.month, event.Period_ID])
-
-    })
-  })
-
-  con.query(insert, [values], function (err, result, fields) {
-    if (err) {
-      console.log("/period : " + err)
-      res.end(result)
-      throw err;
-    }
-    res.json(result);
-  });
-})
-
-
-app.post('/schedule/delete', (req, res) => {
-  con.query(`Delete FROM Schedule where User_ID = "${req.body.DeletePeriodDB.User_ID}" and Date = "${req.body.DeletePeriodDB.Date}" and Period_ID = "${req.body.DeletePeriodDB.Period_ID}"`, function (err, result, fields) {
     if (err) {
       console.log("/deleteperiod : " + err)
       throw err
@@ -218,6 +237,7 @@ app.post('/register', regisMiddleware, (req, res) => {
 app.get('/company/select', (req, res) => {
   con.query('select * from Company c where c.Company_ID = 11 ', function (err, result, fields) {
     if (err) {
+      console.log("/company/select" + err)
       throw err
     };
     res.json(result)
@@ -227,11 +247,82 @@ app.get('/company/select', (req, res) => {
 app.post('/company/insert', (req, res) => {
   con.query(`INSERT INTO Company (Company_Name, Company_Mail,Company_Tel,Company_Picture) VALUES ("${req.body.createcompany.companyName}","${req.body.createcompany.companyEmail}","${req.body.createcompany.companyTel}","${req.body.companypicture}")`, function (err, result, fields) {
     if (err) {
+      console.log("/company/insert : " + err)
       throw err
     };
     res.json(result);
   })
 })
+
+/*------------------------------Request------------------------------------*/
+const insertRequest = (req, res, next) => {
+  let date = Date.now().toString();
+  let insert = `INSERT INTO Request (Request_Date,RequestStatus_ID,RequestType_ID) VALUES ?`
+  let values = [];
+
+  values.push([date, 2, 2]);
+
+  con.query(insert, [values], function (err, result) {
+    if (err) {
+      console.log("insertRequest : " + err)
+      throw err;
+    }
+    req.date = date;
+    next();
+  })
+}
+
+const getRequestID = (req, res, next) => {
+  con.query(`select Request_ID From Request WHERE Request_Date = "${req.date}"`, function (err, result, fields) {
+    if (err) {
+      console.log("getRequestID : " + err)
+      throw err;
+    }
+    req.reqID = result[0].Request_ID
+    next();
+  })
+}
+
+
+app.post("/request", insertRequest, getRequestID, (req, res) => {
+  let insert = `INSERT INTO RequestFor (RequestFor_Description, Request_ID, Schedule_ID) VALUES ?`
+  let values = req.body.request.map(request => {
+    return ["TEST", req.reqID, request];
+  });
+  con.query(insert, [values], function (err, result) {
+    if (err) {
+      console.log("/request : " + err)
+      throw err;
+    }
+    res.json(req.reqID)
+  })
+});
+
+/*------------------------------Notification------------------------------------*/
+const getManagerIDForNotification = (req, res, next) => {
+  con.query(`select u.User_ID From Request q JOIN RequestFor r ON q.Request_ID = r.Request_ID JOIN Schedule s ON r.Schedule_ID = s.Schedule_ID JOIN User u ON s.User_ID = u.User_ID JOIN Position p ON u.Position_ID = p.Position_ID JOIN Department d ON p.Department_ID = d.Department_ID where d.Department_ID = "${req.depID}" and p.Position_Name = "Manager" and q.Request_ID = "${req.body.notification}"`,
+    function (err, result, fields) {
+      if (err) {
+        throw err;
+      }
+      req.managerID = result[0].User_ID
+      next();
+    })
+}
+
+app.post("/insert/notification/manager", MiddleWare, getManagerIDForNotification, (req, res) => {
+  let insert = `INSERT INTO Notification (Notification_Description, Request_ID,User_ID) VALUES ?`
+  let values = [];
+
+  values.push(["TEST Notification", req.body.notification, req.managerID])
+  con.query(insert, [values], function (err, result) {
+    if (err) {
+      console.log("/insert/notification/manager : " + err)
+      throw err;
+    }
+    res.json("Request Success")
+  })
+});
 
 
 /*------------------------------Login------------------------------------*/
@@ -328,17 +419,5 @@ app.get('/company/select', (req, res) => {
 con.connect(err => {
   app.listen(8080, () => {
     console.log('Connection success, Start server at port 8080.')
-  })
-});
-
-app.post('/department/insert', (req, res) => {
-  console.log("ACCEPT")
-  console.log(req.body.createdepartment)
-  console.log(req.body.departmentpicture)
-  con.query(`INSERT INTO Department (Department_Name,Department_TelNo,Department_Picture) VALUES ("${req.body.createdepartment.departmentName}","${req.body.createdepartment.departmentTel}","${req.body.departmentpicture}")`, function (err, result, fields){
-    if(err){
-      throw err
-    };
-    res.json(result);
   })
 })
