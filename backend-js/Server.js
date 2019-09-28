@@ -45,13 +45,11 @@ function nameMiddleware(req, res, next) {
 }
 
 function managerNotificationID(req, res, next) {
-  if (req.headers.tkauth != "null" || req.headers.tkauth != "undefined") {
-    var decoded = jwtDecode(req.headers.tkauth);
-    con.query(`select User_ID From User where UserName = "${decoded.sub}"`, function (err, result, fields) {
-      req.managerNotiID = result[0].User_ID;
-      next();
-    })
-  }
+  con.query(`select User_ID From User where UserName = "${req.userName}"`, function (err, result, fields) {
+    console.log("result : " , result)
+    req.managerNotiID = result[0].User_ID;
+    next();
+  })
 }
 
 /*------------------------------Select------------------------------------*/
@@ -123,8 +121,8 @@ app.get('/name', nameMiddleware, (req, res) => {
     });
 })
 
-app.get("/notification", managerNotificationID, (req, res) => {
-  con.query(`select concat(u.name," ",u.surname), s.Date, s.Month, p.Period_Time_One, p.Period_Time_Two From Notification n JOIN Request r ON n.Request_ID = r.Request_ID JOIN RequestStatus rs ON r.RequestStatus_ID = rs.RequestStatus_ID JOIN RequestFor f ON r.Request_ID = f.Request_ID JOIN Schedule s ON f.Schedule_ID = s.Schedule_ID JOIN Period p ON s.Period_ID = p.Period_ID JOIN User u ON s.User_ID = u.User_ID WHERE n.User_ID = "${req.managerNotiID}" and rs.RequestStatus_Name = "pending"`,
+app.get("/notification", MiddleWare,managerNotificationID, (req, res) => {
+  con.query(`select u.User_ID,u.name,u.surname,f.Request_ID, s.Schedule_ID, s.Period_ID, s.Date, s.Month, p.Period_Time_One, p.Period_Time_Two From Notification n JOIN Request r ON n.Request_ID = r.Request_ID JOIN RequestStatus rs ON r.RequestStatus_ID = rs.RequestStatus_ID JOIN RequestFor f ON r.Request_ID = f.Request_ID JOIN Schedule s ON f.Schedule_ID = s.Schedule_ID JOIN Period p ON s.Period_ID = p.Period_ID JOIN User u ON s.User_ID = u.User_ID WHERE n.User_ID = "${req.managerNotiID}" and rs.RequestStatus_Name = "pending" Order by  n.Notification_ID DESC, f.Request_ID ASC, f.RequestFor_ID ASC`,
     function (err, result, fields) {
       if (err) {
         console.log("/notification " + err)
@@ -134,6 +132,16 @@ app.get("/notification", managerNotificationID, (req, res) => {
     })
 })
 
+app.get("/notification/absent", MiddleWare, managerNotificationID, (req, res) => {
+  con.query(`select u.User_ID,u.name,u.surname,f.Request_ID, s.Schedule_ID, s.Period_ID, s.Date, s.Month, p.Period_Time_One, p.Period_Time_Two From Notification n JOIN Request r ON n.Request_ID = r.Request_ID JOIN RequestStatus rs ON r.RequestStatus_ID = rs.RequestStatus_ID JOIN RequestFor f ON r.Request_ID = f.Request_ID JOIN Schedule s ON f.Schedule_ID = s.Schedule_ID JOIN Period p ON s.Period_ID = p.Period_ID JOIN User u ON s.User_ID = u.User_ID WHERE n.User_ID = "${req.managerNotiID}" and rs.RequestStatus_Name = "pending" and r.RequestType_ID = 1 Order by  n.Notification_ID DESC, f.Request_ID ASC, f.RequestFor_ID ASC`,
+    function (err, result, fields) {
+      if (err) {
+        console.log("/notification " + err)
+        throw err;
+      }
+      res.json(result);
+    })
+})
 /*------------------------------Schedule------------------------------------*/
 app.post('/schedule', (req, res) => {
   let insert = "INSERT INTO Schedule (User_ID, Date, Month, Period_ID) VALUES ?"
@@ -272,6 +280,23 @@ const insertRequest = (req, res, next) => {
   })
 }
 
+const insertRequestAbsent = (req, res, next) => {
+  let date = Date.now().toString();
+  let insert = `INSERT INTO Request (Request_Date,RequestStatus_ID,RequestType_ID) VALUES ?`
+  let values = [];
+
+  values.push([date, 2, 1]);
+
+  con.query(insert, [values], function (err, result) {
+    if (err) {
+      console.log("insertRequest : " + err)
+      throw err;
+    }
+    req.date = date;
+    next();
+  })
+}
+
 const getRequestID = (req, res, next) => {
   con.query(`select Request_ID From Request WHERE Request_Date = "${req.date}"`, function (err, result, fields) {
     if (err) {
@@ -287,8 +312,23 @@ const getRequestID = (req, res, next) => {
 app.post("/request", insertRequest, getRequestID, (req, res) => {
   let insert = `INSERT INTO RequestFor (RequestFor_Description, Request_ID, Schedule_ID) VALUES ?`
   let values = req.body.request.map(request => {
-    return ["TEST", req.reqID, request];
+    return ["Request For Change Schedule", req.reqID, request];
   });
+  con.query(insert, [values], function (err, result) {
+    if (err) {
+      console.log("/request : " + err)
+      throw err;
+    }
+    res.json(req.reqID)
+  })
+});
+
+app.post("/request/absent", insertRequestAbsent, getRequestID, (req, res) => {
+  let insert = `INSERT INTO RequestFor (RequestFor_Description, Request_ID, Schedule_ID) VALUES ?`
+  let values = req.body.request.map(request => {
+    return [req.body.description, req.reqID, request];
+  });
+
   con.query(insert, [values], function (err, result) {
     if (err) {
       console.log("/request : " + err)
@@ -300,21 +340,159 @@ app.post("/request", insertRequest, getRequestID, (req, res) => {
 
 /*------------------------------Notification------------------------------------*/
 const getManagerIDForNotification = (req, res, next) => {
-  con.query(`select u.User_ID From Request q JOIN RequestFor r ON q.Request_ID = r.Request_ID JOIN Schedule s ON r.Schedule_ID = s.Schedule_ID JOIN User u ON s.User_ID = u.User_ID JOIN Position p ON u.Position_ID = p.Position_ID JOIN Department d ON p.Department_ID = d.Department_ID where d.Department_ID = "${req.depID}" and p.Position_Name = "Manager" and q.Request_ID = "${req.body.notification}"`,
+  con.query(`select u.User_ID From User u JOIN Position p ON u.Position_ID = p.Position_ID JOIN Department d ON p.Department_ID = d.Department_ID where d.Department_ID = "${req.depID}" and p.Position_Name = "Manager"`,
     function (err, result, fields) {
       if (err) {
         throw err;
       }
-      req.managerID = result[0].User_ID
-      next();
+        req.managerID = result[0].User_ID
+        next();
     })
+}
+
+const approveNotification = (req, res, next) => {
+  con.query(`UPDATE Request SET RequestStatus_ID = 1 WHERE Request_ID = ${req.body.approve[0].Request_ID}`, function (err, result) {
+    if (err) {
+      console.log("approveNotification : " + err)
+      throw err;
+    }
+    next();
+  })
+};
+
+const rejectNotification = (req, res, next) => {
+  con.query(`UPDATE Request SET RequestStatus_ID = 3 WHERE Request_ID = ${req.body.reject[0].Request_ID}`, function (err, result) {
+    if (err) {
+      console.log("approveNotification : " + err)
+      throw err;
+    }
+    next();
+  })
+}
+
+const approveAbesntNotification = (req, res, next) => {
+  con.query(`UPDATE Request SET RequestStatus_ID = 1 WHERE Request_ID = ${req.body.approve.Request_ID}`, function (err, result) {
+    if (err) {
+      console.log("approveNotification : " + err)
+      throw err;
+    }
+    next();
+  })
+};
+
+const rejectAbsentNotification = (req, res, next) => {
+  con.query(`UPDATE Request SET RequestStatus_ID = 3 WHERE Request_ID = ${req.body.reject.Request_ID}`, function (err, result) {
+    if (err) {
+      console.log("approveNotification : " + err)
+      throw err;
+    }
+    next();
+  })
+}
+
+const changeSchedule = (req, res, next) => {
+  let values = req.body.approve.map(period => {
+    return period.Period_ID;
+  })
+  let value = req.body.approve.map(scheduleID => {
+    return scheduleID.Schedule_ID
+  })
+  let arrayValue1 = value[0]
+  let arrayValue2 = value[1]
+  value = []
+  value.push(arrayValue2, arrayValue1)
+
+  con.query(`UPDATE Schedule SET Period_ID = "${values[0]}" WHERE Schedule_ID = "${value[0]}"`, function (err, result, fields) {
+    if (err) {
+      throw err;
+    }
+  })
+  con.query(`UPDATE Schedule SET Period_ID = "${values[1]}" WHERE Schedule_ID = "${value[1]}"`, function (err, result, fields) {
+    if (err) {
+      throw err;
+    }
+  })
+  next();
+}
+const deleteRequestFor = (req, res, next) => {
+  con.query(`DELETE From RequestFor Where Schedule_ID = "${req.body.approve.Schedule_ID}"`, function (err, result, fields) {
+    if (err) {
+      throw err;
+    }
+    next();
+  })
+}
+
+const deleteScedule = (req, res, next) => {
+  con.query(`DELETE From Schedule Where Schedule_ID = "${req.body.approve.Schedule_ID}"`, function (err, result, fields) {
+    if (err) {
+      throw err;
+    }
+    next();
+  })
+}
+
+const sendApproveNotificationToUser = (req, res, next) => {
+  let insert = `INSERT INTO Notification (Notification_Description, Request_ID,User_ID) VALUES ?`
+  let values = req.body.approve.map(notification => {
+    return ["Request is Approve", notification.Request_ID, notification.User_ID]
+  })
+
+  con.query(insert, [values], function (err, result) {
+    if (err) {
+      console.log("/insert/notification/manager : " + err)
+      throw err;
+    }
+    next();
+  })
+}
+
+const sendRejectNotificationToUser = (req, res, next) => {
+  let insert = `INSERT INTO Notification (Notification_Description, Request_ID,User_ID) VALUES ?`
+  let values = req.body.reject.map(notification => {
+    return ["Request is Reject", notification.Request_ID, notification.User_ID]
+  })
+
+  con.query(insert, [values], function (err, result) {
+    if (err) {
+      console.log("/insert/notification/manager : " + err)
+      throw err;
+    }
+    next();
+  })
+}
+
+const sendApproveAbsentNotificationToUser = (req, res, next) => {
+  let insert = `INSERT INTO Notification (Notification_Description, Request_ID,User_ID) VALUES ?`
+  let values = [["Request Absent is Approve", req.body.approve.Request_ID, req.body.approve.User_ID]]
+
+  con.query(insert, [values], function (err, result) {
+    if (err) {
+      console.log("/insert/notification/manager : " + err)
+      throw err;
+    }
+    next();
+  })
+}
+
+const sendRejectAbsentNotificationToUser = (req, res, next) => {
+  let insert = `INSERT INTO Notification (Notification_Description, Request_ID,User_ID) VALUES ?`
+  let values = [["Request Absent is Reject", req.body.reject.Request_ID, req.body.reject.User_ID]]
+
+  con.query(insert, [values], function (err, result) {
+    if (err) {
+      console.log("/insert/notification/manager : " + err)
+      throw err;
+    }
+    next();
+  })
 }
 
 app.post("/insert/notification/manager", MiddleWare, getManagerIDForNotification, (req, res) => {
   let insert = `INSERT INTO Notification (Notification_Description, Request_ID,User_ID) VALUES ?`
   let values = [];
 
-  values.push(["TEST Notification", req.body.notification, req.managerID])
+  values.push(["Notification", req.body.notification, req.managerID])
   con.query(insert, [values], function (err, result) {
     if (err) {
       console.log("/insert/notification/manager : " + err)
@@ -323,6 +501,22 @@ app.post("/insert/notification/manager", MiddleWare, getManagerIDForNotification
     res.json("Request Success")
   })
 });
+
+app.post('/notification/approve', approveNotification, changeSchedule, sendApproveNotificationToUser, (req, res) => {
+  res.json("Approve Success");
+})
+
+app.post('/notification/reject', rejectNotification, sendRejectNotificationToUser, (req, res) => {
+  res.json("Reject Success");
+})
+
+app.post('/notification/absent/approve', approveAbesntNotification, deleteRequestFor, deleteScedule, sendApproveAbsentNotificationToUser, (req, res) => {
+  res.json("Approve Success")
+})
+
+app.post('/notification/absent/reject', rejectAbsentNotification, sendRejectAbsentNotificationToUser, (req, res) => {
+  res.json("Reject Success");
+})
 
 
 /*------------------------------Login------------------------------------*/
