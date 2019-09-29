@@ -46,12 +46,17 @@ function nameMiddleware(req, res, next) {
 
 function managerNotificationID(req, res, next) {
   con.query(`select User_ID From User where UserName = "${req.userName}"`, function (err, result, fields) {
-    console.log("result : " , result)
     req.managerNotiID = result[0].User_ID;
     next();
   })
 }
 
+function userNotificationID(req,res,next) {
+  con.query(`select User_ID From User where UserName = "${req.userName}"`, function (err, result, fields) {
+    req.userNotiID = result[0].User_ID;
+    next();
+  })
+}
 /*------------------------------Select------------------------------------*/
 
 app.get('/users', MiddleWare, (req, res) => {
@@ -121,8 +126,8 @@ app.get('/name', nameMiddleware, (req, res) => {
     });
 })
 
-app.get("/notification", MiddleWare,managerNotificationID, (req, res) => {
-  con.query(`select u.User_ID,u.name,u.surname,f.Request_ID, s.Schedule_ID, s.Period_ID, s.Date, s.Month, p.Period_Time_One, p.Period_Time_Two From Notification n JOIN Request r ON n.Request_ID = r.Request_ID JOIN RequestStatus rs ON r.RequestStatus_ID = rs.RequestStatus_ID JOIN RequestFor f ON r.Request_ID = f.Request_ID JOIN Schedule s ON f.Schedule_ID = s.Schedule_ID JOIN Period p ON s.Period_ID = p.Period_ID JOIN User u ON s.User_ID = u.User_ID WHERE n.User_ID = "${req.managerNotiID}" and rs.RequestStatus_Name = "pending" Order by  n.Notification_ID DESC, f.Request_ID ASC, f.RequestFor_ID ASC`,
+app.get("/manager/notification", MiddleWare,managerNotificationID, (req, res) => {
+  con.query(`select u.User_ID,u.name,u.surname,f.Request_ID, s.Schedule_ID, s.Period_ID, s.Date, s.Month, p.Period_Time_One, p.Period_Time_Two From Notification n JOIN Request r ON n.Request_ID = r.Request_ID JOIN RequestStatus rs ON r.RequestStatus_ID = rs.RequestStatus_ID JOIN RequestFor f ON r.Request_ID = f.Request_ID JOIN Schedule s ON f.Schedule_ID = s.Schedule_ID JOIN Period p ON s.Period_ID = p.Period_ID JOIN User u ON s.User_ID = u.User_ID WHERE n.User_ID = "${req.managerNotiID}" and rs.RequestStatus_Name = "pending" and r.RequestType_ID = 2 Order by  n.Notification_ID DESC, f.Request_ID ASC, f.RequestFor_ID ASC`,
     function (err, result, fields) {
       if (err) {
         console.log("/notification " + err)
@@ -132,8 +137,8 @@ app.get("/notification", MiddleWare,managerNotificationID, (req, res) => {
     })
 })
 
-app.get("/notification/absent", MiddleWare, managerNotificationID, (req, res) => {
-  con.query(`select u.User_ID,u.name,u.surname,f.Request_ID, s.Schedule_ID, s.Period_ID, s.Date, s.Month, p.Period_Time_One, p.Period_Time_Two From Notification n JOIN Request r ON n.Request_ID = r.Request_ID JOIN RequestStatus rs ON r.RequestStatus_ID = rs.RequestStatus_ID JOIN RequestFor f ON r.Request_ID = f.Request_ID JOIN Schedule s ON f.Schedule_ID = s.Schedule_ID JOIN Period p ON s.Period_ID = p.Period_ID JOIN User u ON s.User_ID = u.User_ID WHERE n.User_ID = "${req.managerNotiID}" and rs.RequestStatus_Name = "pending" and r.RequestType_ID = 1 Order by  n.Notification_ID DESC, f.Request_ID ASC, f.RequestFor_ID ASC`,
+app.get("/manager/notification/absent", MiddleWare, managerNotificationID, (req, res) => {
+  con.query(`select u.User_ID,u.name,u.surname,f.Request_ID, s.Schedule_ID, s.Period_ID, s.Date, s.Month, p.Period_Time_One, p.Period_Time_Two From Notification n JOIN Request r ON n.Request_ID = r.Request_ID JOIN RequestStatus rs ON r.RequestStatus_ID = rs.RequestStatus_ID JOIN RequestFor f ON r.Request_ID = f.Request_ID JOIN Schedule s ON f.Schedule_ID = s.Schedule_ID JOIN Period p ON s.Period_ID = p.Period_ID JOIN User u ON s.User_ID = u.User_ID WHERE n.User_ID = "${req.managerNotiID}" and rs.RequestStatus_Name = "pending" and r.RequestType_ID = 1 Order by n.Notification_ID DESC`,
     function (err, result, fields) {
       if (err) {
         console.log("/notification " + err)
@@ -141,6 +146,16 @@ app.get("/notification/absent", MiddleWare, managerNotificationID, (req, res) =>
       }
       res.json(result);
     })
+})
+
+app.get("/user/notification", MiddleWare, userNotificationID, (req,res) => {
+  con.query(`select u.User_ID,u.name,u.surname,n.Notification_Description, s.Period_ID, s.Date, s.Month, p.Period_Time_One, p.Period_Time_Two From Notification n JOIN Request r ON n.Request_ID = r.Request_ID JOIN RequestStatus rs ON r.RequestStatus_ID = rs.RequestStatus_ID JOIN RequestFor f ON r.Request_ID = f.Request_ID JOIN Schedule s ON f.Schedule_ID = s.Schedule_ID JOIN Period p ON s.Period_ID = p.Period_ID JOIN User u ON s.User_ID = u.User_ID WHERE n.User_ID = ${req.userNotiID} and rs.RequestStatus_Name != "pending" and u.User_ID = "${req.userNotiID}" Order by n.Notification_ID DESC`, 
+  function(err,result,fields){
+    if(err) {
+      throw err;
+    }
+    res.json(result)
+  })
 })
 /*------------------------------Schedule------------------------------------*/
 app.post('/schedule', (req, res) => {
@@ -185,6 +200,15 @@ app.get('/showschedule', MiddleWare, (req, res) => {
     });
 })
 
+app.get('/already/request',MiddleWare, (req,res) => {
+  con.query(`select r.Request_ID,f.Schedule_ID From Request r JOIN RequestStatus rs ON r.RequestStatus_ID = rs.RequestStatus_ID JOIN RequestFor f ON r.Request_ID = f.Request_ID JOIN Schedule s ON f.Schedule_ID = s.Schedule_ID JOIN User u ON s.User_ID = u.User_ID JOIN Position p ON u.Position_ID = p.Position_ID JOIN Department d ON p.Department_ID = d.Department_ID WHERE d.Department_ID = "${req.depID}" AND rs.RequestStatus_ID = 2`, function(err,result,fields){
+    if(err) {
+      console.log("/already/request : " + err)
+      throw err;
+    }
+    res.json(result)
+  })
+})
 /*------------------------------Period------------------------------------*/
 app.post('/period', MiddleWare, async (req, res) => {
 
@@ -222,7 +246,9 @@ app.post('/deleteperiod', async (req, res) => {
 
 /*------------------------------Register------------------------------------*/
 const regisMiddleware = (req, res, next) => {
+  console.log(req.body.register)
   con.query(`select UserName from User where UserName = "${req.body.register.username}"`, function (err, result, fields) {
+    console.log(result)
     if (result.length < 1) {
       next();
     } else {
@@ -492,7 +518,7 @@ app.post("/insert/notification/manager", MiddleWare, getManagerIDForNotification
   let insert = `INSERT INTO Notification (Notification_Description, Request_ID,User_ID) VALUES ?`
   let values = [];
 
-  values.push(["Notification", req.body.notification, req.managerID])
+  values.push(["User Send Request Success", req.body.notification, req.managerID])
   con.query(insert, [values], function (err, result) {
     if (err) {
       console.log("/insert/notification/manager : " + err)
