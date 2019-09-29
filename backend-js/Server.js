@@ -190,14 +190,15 @@ app.post('/schedule', (req, res) => {
   });
 })
 
-app.post('/schedule/delete', (req, res) => {
-  con.query(`Delete FROM Schedule where User_ID = "${req.body.DeletePeriodDB.User_ID}" and Date = "${req.body.DeletePeriodDB.Date}" and Period_ID = "${req.body.DeletePeriodDB.Period_ID}"`, function (err, result, fields) {
-    if (err) {
-      console.log("/deleteperiod : " + err)
-      throw err
-    };
-    res.json(result)
-  })
+app.post('/schedule/delete',(req, res) => {
+  // console.log(req.body)
+  // con.query(`Delete FROM Schedule where User_ID = "${req.body.DeletePeriodDB.User_ID}" and Date = "${req.body.DeletePeriodDB.Date}" and Period_ID = "${req.body.DeletePeriodDB.Period_ID}"`, function (err, result, fields) {
+  //   if (err) {
+  //     console.log("/deleteperiod : " + err)
+  //     throw err
+  //   };
+  //   res.json(result)
+  // })
 })
 
 app.get('/showschedule', MiddleWare, (req, res) => {
@@ -432,17 +433,21 @@ const changeSchedule = (req, res, next) => {
   let value = req.body.approve.map(scheduleID => {
     return scheduleID.Schedule_ID
   })
+
+  let val = req.body.approve.map(day => {
+    return day.Date
+  })
   let arrayValue1 = value[0]
   let arrayValue2 = value[1]
   value = []
   value.push(arrayValue2, arrayValue1)
-
-  con.query(`UPDATE Schedule SET Period_ID = "${values[0]}" WHERE Schedule_ID = "${value[0]}"`, function (err, result, fields) {
+  
+  con.query(`UPDATE Schedule SET Period_ID = "${values[0]}", Date = "${val[0]}" WHERE Schedule_ID = "${value[0]}"`, function (err, result, fields) {
     if (err) {
       throw err;
     }
   })
-  con.query(`UPDATE Schedule SET Period_ID = "${values[1]}" WHERE Schedule_ID = "${value[1]}"`, function (err, result, fields) {
+  con.query(`UPDATE Schedule SET Period_ID = "${values[1]}", Date = "${val[1]}" WHERE Schedule_ID = "${value[1]}"`, function (err, result, fields) {
     if (err) {
       throw err;
     }
