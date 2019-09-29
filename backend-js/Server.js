@@ -51,6 +51,17 @@ function managerNotificationID(req, res, next) {
   })
 }
 
+function getManagerNotiID(req, res, next) {
+  con.query(`select * From User where UserName = "${req.userName}"`, 
+  function (err, result, fields) {
+    if(err){
+      throw err
+    }
+    req.managerNotiID = result[0].User_ID;
+    next();
+  })
+}
+
 function userNotificationID(req,res,next) {
   con.query(`select User_ID From User where UserName = "${req.userName}"`, function (err, result, fields) {
     req.userNotiID = result[0].User_ID;
@@ -137,7 +148,7 @@ app.get("/manager/notification", MiddleWare,managerNotificationID, (req, res) =>
     })
 })
 
-app.get("/manager/notification/absent", MiddleWare, managerNotificationID, (req, res) => {
+app.get("/manager/notification/absent", MiddleWare, getManagerNotiID, (req, res) => {
   con.query(`select u.User_ID,u.name,u.surname,f.Request_ID, s.Schedule_ID, s.Period_ID, s.Date, s.Month, p.Period_Time_One, p.Period_Time_Two From Notification n JOIN Request r ON n.Request_ID = r.Request_ID JOIN RequestStatus rs ON r.RequestStatus_ID = rs.RequestStatus_ID JOIN RequestFor f ON r.Request_ID = f.Request_ID JOIN Schedule s ON f.Schedule_ID = s.Schedule_ID JOIN Period p ON s.Period_ID = p.Period_ID JOIN User u ON s.User_ID = u.User_ID WHERE n.User_ID = "${req.managerNotiID}" and rs.RequestStatus_Name = "pending" and r.RequestType_ID = 1 Order by n.Notification_ID DESC`,
     function (err, result, fields) {
       if (err) {
@@ -246,9 +257,7 @@ app.post('/deleteperiod', async (req, res) => {
 
 /*------------------------------Register------------------------------------*/
 const regisMiddleware = (req, res, next) => {
-  console.log(req.body.register)
   con.query(`select UserName from User where UserName = "${req.body.register.username}"`, function (err, result, fields) {
-    console.log(result)
     if (result.length < 1) {
       next();
     } else {
@@ -544,6 +553,25 @@ app.post('/notification/absent/reject', rejectAbsentNotification, sendRejectAbse
   res.json("Reject Success");
 })
 
+/*------------------------------Edit Profile------------------------------------*/
+app.get('/user/profile', nameMiddleware, (req,res) => {
+  con.query(`select name,surname,Email,PhoneNumber,UserPicture from User WHERE UserName = "${req.userName}"`, 
+  function (err,result,fields) {
+    if(err){
+      throw err;
+    }
+    res.json(result)
+  })
+})
+
+app.post('/insert/user/profile', nameMiddleware, (req,res) => {
+  con.query(`UPDATE User SET name = "${req.body.name}", surname = "${req.body.surname}", Email = "${req.body.email}", PhoneNumber = "${req.body.telno}", UserPicture = "${req.body.picture}" WHERE UserName = "${req.userName}"`, function (err, result, fields) {
+    if (err) {
+      throw err;
+    }
+    res.json("Edit Profile Success")
+  })
+})
 
 /*------------------------------Login------------------------------------*/
 const LoginMiddleWare = (req, res, next) => {
