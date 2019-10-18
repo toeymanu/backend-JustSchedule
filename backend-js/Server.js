@@ -52,17 +52,17 @@ function managerNotificationID(req, res, next) {
 }
 
 function getManagerNotiID(req, res, next) {
-  con.query(`select * From User where UserName = "${req.userName}"`, 
-  function (err, result, fields) {
-    if(err){
-      throw err
-    }
-    req.managerNotiID = result[0].User_ID;
-    next();
-  })
+  con.query(`select * From User where UserName = "${req.userName}"`,
+    function (err, result, fields) {
+      if (err) {
+        throw err
+      }
+      req.managerNotiID = result[0].User_ID;
+      next();
+    })
 }
 
-function userNotificationID(req,res,next) {
+function userNotificationID(req, res, next) {
   con.query(`select User_ID From User where UserName = "${req.userName}"`, function (err, result, fields) {
     req.userNotiID = result[0].User_ID;
     next();
@@ -137,7 +137,7 @@ app.get('/name', nameMiddleware, (req, res) => {
     });
 })
 
-app.get("/manager/notification", MiddleWare,managerNotificationID, (req, res) => {
+app.get("/manager/notification", MiddleWare, managerNotificationID, (req, res) => {
   con.query(`select u.User_ID,u.name,u.surname,f.Request_ID, s.Schedule_ID, s.Period_ID, s.Date, s.Month, p.Period_Time_One, p.Period_Time_Two From Notification n JOIN Request r ON n.Request_ID = r.Request_ID JOIN RequestStatus rs ON r.RequestStatus_ID = rs.RequestStatus_ID JOIN RequestFor f ON r.Request_ID = f.Request_ID JOIN Schedule s ON f.Schedule_ID = s.Schedule_ID JOIN Period p ON s.Period_ID = p.Period_ID JOIN User u ON s.User_ID = u.User_ID WHERE n.User_ID = "${req.managerNotiID}" and rs.RequestStatus_Name = "pending" and r.RequestType_ID = 2 Order by  n.Notification_ID DESC, f.Request_ID ASC, f.RequestFor_ID ASC`,
     function (err, result, fields) {
       if (err) {
@@ -159,14 +159,14 @@ app.get("/manager/notification/absent", MiddleWare, getManagerNotiID, (req, res)
     })
 })
 
-app.get("/user/notification", MiddleWare, userNotificationID, (req,res) => {
-  con.query(`select u.User_ID,u.name,u.surname,n.Notification_Description, s.Period_ID, s.Date, s.Month, p.Period_Time_One, p.Period_Time_Two From Notification n JOIN Request r ON n.Request_ID = r.Request_ID JOIN RequestStatus rs ON r.RequestStatus_ID = rs.RequestStatus_ID JOIN RequestFor f ON r.Request_ID = f.Request_ID JOIN Schedule s ON f.Schedule_ID = s.Schedule_ID JOIN Period p ON s.Period_ID = p.Period_ID JOIN User u ON s.User_ID = u.User_ID WHERE n.User_ID = ${req.userNotiID} and rs.RequestStatus_Name != "pending" and u.User_ID = "${req.userNotiID}" Order by n.Notification_ID DESC`, 
-  function(err,result,fields){
-    if(err) {
-      throw err;
-    }
-    res.json(result)
-  })
+app.get("/user/notification", MiddleWare, userNotificationID, (req, res) => {
+  con.query(`select u.User_ID,u.name,u.surname,n.Notification_Description, s.Period_ID, s.Date, s.Month, p.Period_Time_One, p.Period_Time_Two From Notification n JOIN Request r ON n.Request_ID = r.Request_ID JOIN RequestStatus rs ON r.RequestStatus_ID = rs.RequestStatus_ID JOIN RequestFor f ON r.Request_ID = f.Request_ID JOIN Schedule s ON f.Schedule_ID = s.Schedule_ID JOIN Period p ON s.Period_ID = p.Period_ID JOIN User u ON s.User_ID = u.User_ID WHERE n.User_ID = ${req.userNotiID} and rs.RequestStatus_Name != "pending" and u.User_ID = "${req.userNotiID}" Order by n.Notification_ID DESC`,
+    function (err, result, fields) {
+      if (err) {
+        throw err;
+      }
+      res.json(result)
+    })
 })
 /*------------------------------Schedule------------------------------------*/
 app.post('/schedule', (req, res) => {
@@ -190,7 +190,7 @@ app.post('/schedule', (req, res) => {
   });
 })
 
-app.post('/schedule/delete',(req, res) => {
+app.post('/schedule/delete', (req, res) => {
   // console.log(req.body)
   // con.query(`Delete FROM Schedule where User_ID = "${req.body.DeletePeriodDB.User_ID}" and Date = "${req.body.DeletePeriodDB.Date}" and Period_ID = "${req.body.DeletePeriodDB.Period_ID}"`, function (err, result, fields) {
   //   if (err) {
@@ -212,9 +212,9 @@ app.get('/showschedule', MiddleWare, (req, res) => {
     });
 })
 
-app.get('/already/request',MiddleWare, (req,res) => {
-  con.query(`select r.Request_ID,f.Schedule_ID From Request r JOIN RequestStatus rs ON r.RequestStatus_ID = rs.RequestStatus_ID JOIN RequestFor f ON r.Request_ID = f.Request_ID JOIN Schedule s ON f.Schedule_ID = s.Schedule_ID JOIN User u ON s.User_ID = u.User_ID JOIN Position p ON u.Position_ID = p.Position_ID JOIN Department d ON p.Department_ID = d.Department_ID WHERE d.Department_ID = "${req.depID}" AND rs.RequestStatus_ID = 2`, function(err,result,fields){
-    if(err) {
+app.get('/already/request', MiddleWare, (req, res) => {
+  con.query(`select r.Request_ID,f.Schedule_ID From Request r JOIN RequestStatus rs ON r.RequestStatus_ID = rs.RequestStatus_ID JOIN RequestFor f ON r.Request_ID = f.Request_ID JOIN Schedule s ON f.Schedule_ID = s.Schedule_ID JOIN User u ON s.User_ID = u.User_ID JOIN Position p ON u.Position_ID = p.Position_ID JOIN Department d ON p.Department_ID = d.Department_ID WHERE d.Department_ID = "${req.depID}" AND rs.RequestStatus_ID = 2`, function (err, result, fields) {
+    if (err) {
       console.log("/already/request : " + err)
       throw err;
     }
@@ -240,20 +240,20 @@ app.post('/period', MiddleWare, async (req, res) => {
 app.post('/deleteperiod', async (req, res) => {
   await con.query(`
   Delete from Schedule where Period_ID = "${req.body.DeletePeriod.Period_ID}"`, function (err, result, fields) {
-    if (err) {
-      console.log("/deleteperiod : " + err)
-      throw err
-    };
-  })
+      if (err) {
+        console.log("/deleteperiod : " + err)
+        throw err
+      };
+    })
 
   await con.query(`
   Delete from Period where Period_ID = "${req.body.DeletePeriod.Period_ID}"`, function (err, result, fields) {
-    if (err) {
-      console.log("/deleteperiod : " + err)
-      throw err
-    };
-    res.json(result)
-  })
+      if (err) {
+        console.log("/deleteperiod : " + err)
+        throw err
+      };
+      res.json(result)
+    })
 })
 
 /*------------------------------Register------------------------------------*/
@@ -381,8 +381,8 @@ const getManagerIDForNotification = (req, res, next) => {
       if (err) {
         throw err;
       }
-        req.managerID = result[0].User_ID
-        next();
+      req.managerID = result[0].User_ID
+      next();
     })
 }
 
@@ -441,7 +441,7 @@ const changeSchedule = (req, res, next) => {
   let arrayValue2 = value[1]
   value = []
   value.push(arrayValue2, arrayValue1)
-  
+
   con.query(`UPDATE Schedule SET Period_ID = "${values[0]}", Date = "${val[0]}" WHERE Schedule_ID = "${value[0]}"`, function (err, result, fields) {
     if (err) {
       throw err;
@@ -559,17 +559,17 @@ app.post('/notification/absent/reject', rejectAbsentNotification, sendRejectAbse
 })
 
 /*------------------------------Edit Profile------------------------------------*/
-app.get('/user/profile', nameMiddleware, (req,res) => {
-  con.query(`select name,surname,Email,PhoneNumber,UserPicture from User WHERE UserName = "${req.userName}"`, 
-  function (err,result,fields) {
-    if(err){
-      throw err;
-    }
-    res.json(result)
-  })
+app.get('/user/profile', nameMiddleware, (req, res) => {
+  con.query(`select name,surname,Email,PhoneNumber,UserPicture from User WHERE UserName = "${req.userName}"`,
+    function (err, result, fields) {
+      if (err) {
+        throw err;
+      }
+      res.json(result)
+    })
 })
 
-app.post('/insert/user/profile', nameMiddleware, (req,res) => {
+app.post('/insert/user/profile', nameMiddleware, (req, res) => {
   con.query(`UPDATE User SET name = "${req.body.name}", surname = "${req.body.surname}", Email = "${req.body.email}", PhoneNumber = "${req.body.telno}", UserPicture = "${req.body.picture}" WHERE UserName = "${req.userName}"`, function (err, result, fields) {
     if (err) {
       throw err;
@@ -646,16 +646,98 @@ app.post("/users/requesttk", CheckMiddleWare, (req, res) => {
 
 
 /*------------------------------Connect DB------------------------------------*/
-app.post('/company/insert', (req, res) => {
+const createCompany = (req, res, next) => {
+  con.query(`INSERT INTO Company (Company_Name, Company_Mail,Company_Tel,Company_Picture) VALUES ("${req.body.createcompany.companyName}","${req.body.createcompany.companyEmail}","${req.body.createcompany.companyTel}","${req.body.companypicture}")`, function (err, result) {
+    if (err) {
+      throw err
+    }
+    console.log("TEST")
+    next();
+  })
+  // con.query(`select Company_ID from Company where Company_Name = "${req.body.createcompany.companyName}" `, function (err, result, fields) {
+  //   if (err) {
+  //     console.log("/company/select : " + err)
+  //     throw err
+  //   };
+  //   console.log(result)
+  //  req.CompanyID = result[0].Company_ID
+  // });
+  // next();
+
+}
+
+const createDepartment = (req, res, next) => {
+  console.log("TEST")
+  con.query(`Select Company_ID FROM Company WHERE Company_Name = "${req.body.createcompany.companyName}"`, function (err, result, fields) {
+    if (err) {
+      throw err
+    }
+    req.CompanyID = result[0].Company_ID
+  })
+
+  console.log("AAA")
+  con.query(`INSERT INTO Department (Department_Name, Company_ID) VALUES ("Administrator","${req.CompanyID}")`, function (err, result, fields) {
+    if (err) {
+      throw err
+    };
+    next();
+  })
+}
+
+const insertPosition = (req, res, next) => {
+  con.query(`select Department_ID from Department where Department_Name = "Administrator" and Company_ID = "${req.CompanyID}"`, function (err, result, fields) {
+    if (err) {
+      console.log("/company/select : " + err)
+      throw err
+    };
+    req.DepartmentID = result[0].Department_ID
+  });
+
+  con.query(`INSERT INTO Position (Position_Name,Department_ID) VALUES ("Admin","${req.DepartmentID}")`, function (err, result, fields) {
+    if (err) {
+      throw err
+    };
+    next()
+  })
+}
+
+const insertPositionID = (req, res, next) => {
+  con.query(`select Position_ID from Position where Department_ID = "${req.Department_ID}" and Position_Name = "Admin"`, function (err, result, fields) {
+    if (err) {
+      console.log("/company/select : " + err)
+      throw err
+    };
+    req.PositionID = result[0].Position_ID
+  });
+
+  con.query(`INSERT INTO User (Position_ID) VALUES "${req.PositionID}" where UserName = "${req.userName}" `, function (err, result, fields) {
+    if (err) {
+      throw err
+    };
+    next();
+  })
+}
+
+
+
+
+
+
+app.post('/company/insert', nameMiddleware, createCompany, createDepartment, insertPosition, insertPositionID, CheckMiddleWare, (req, res) => {
   console.log("ACCEPT")
   console.log(req.body.createcompany)
   console.log(req.body.companypicture)
-  con.query(`INSERT INTO Company (Company_Name, Company_Mail,Company_Tel,Company_Picture) VALUES ("${req.body.createcompany.companyName}","${req.body.createcompany.companyEmail}","${req.body.createcompany.companyTel}","${req.body.companypicture}")`, function (err, result, fields){
-    if(err){
-      throw err
-    };
-    res.json(result);
-  })
+  const payload = {
+    sub: req.body.username,
+    iat: new Date().getTime(),
+    position: req.userPosition,
+    posID: req.userPosID,
+    depID: req.userDepartID,
+    compID: req.userCompID
+  };
+  const SECRET = process.env.SECRETKEYS;
+  res.json({ tk: jwt.encode(payload, SECRET) })
+
 })
 
 app.get('/company/select', (req, res) => {
