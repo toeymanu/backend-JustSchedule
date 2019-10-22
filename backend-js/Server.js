@@ -240,20 +240,20 @@ app.post('/period', MiddleWare, async (req, res) => {
 app.post('/deleteperiod', async (req, res) => {
   await con.query(`
   Delete from Schedule where Period_ID = "${req.body.DeletePeriod.Period_ID}"`, function (err, result, fields) {
-      if (err) {
-        console.log("/deleteperiod : " + err)
-        throw err
-      };
-    })
+    if (err) {
+      console.log("/deleteperiod : " + err)
+      throw err
+    };
+  })
 
   await con.query(`
   Delete from Period where Period_ID = "${req.body.DeletePeriod.Period_ID}"`, function (err, result, fields) {
-      if (err) {
-        console.log("/deleteperiod : " + err)
-        throw err
-      };
-      res.json(result)
-    })
+    if (err) {
+      console.log("/deleteperiod : " + err)
+      throw err
+    };
+    res.json(result)
+  })
 })
 
 /*------------------------------Register------------------------------------*/
@@ -271,27 +271,6 @@ app.post('/register', regisMiddleware, (req, res) => {
   con.query(`INSERT INTO User (UserName, Password) VALUES ("${req.body.register.username}","${req.body.register.password}")`, function (err, result, fields) {
     if (err) {
       console.log("/register : " + err)
-      throw err
-    };
-    res.json(result);
-  })
-})
-
-/*------------------------------Company------------------------------------*/
-app.get('/company/select', (req, res) => {
-  con.query('select * from Company c where c.Company_ID = 11 ', function (err, result, fields) {
-    if (err) {
-      console.log("/company/select" + err)
-      throw err
-    };
-    res.json(result)
-  });
-})
-
-app.post('/company/insert', (req, res) => {
-  con.query(`INSERT INTO Company (Company_Name, Company_Mail,Company_Tel,Company_Picture) VALUES ("${req.body.createcompany.companyName}","${req.body.createcompany.companyEmail}","${req.body.createcompany.companyTel}","${req.body.companypicture}")`, function (err, result, fields) {
-    if (err) {
-      console.log("/company/insert : " + err)
       throw err
     };
     res.json(result);
@@ -644,89 +623,104 @@ app.post("/users/requesttk", CheckMiddleWare, (req, res) => {
   res.json({ tk: jwt.encode(payload, SECRET) })
 });
 
+/*------------------------------Create Company------------------------------------*/
+const createCompany = async (req, res, next) => {
+  let insert = `INSERT INTO Company (Company_Name, Company_Mail,Company_Tel,Company_Picture) VALUES ?`
+  let values = [[req.body.createcompany.companyName, req.body.createcompany.companyEmail, req.body.createcompany.companyTel, req.body.companypicture]]
 
-/*------------------------------Connect DB------------------------------------*/
-const createCompany = (req, res, next) => {
-  con.query(`INSERT INTO Company (Company_Name, Company_Mail,Company_Tel,Company_Picture) VALUES ("${req.body.createcompany.companyName}","${req.body.createcompany.companyEmail}","${req.body.createcompany.companyTel}","${req.body.companypicture}")`, function (err, result) {
+  await con.query(insert, [values], function (err, result) {
+    if (err) {
+      console.log("/company/insert : " + err)
+      throw err;
+    }
+  })
+
+  await con.query(`Select Company_ID FROM Company WHERE Company_Name = "${req.body.createcompany.companyName}"`, function (err, result, fields) {
     if (err) {
       throw err
     }
-    console.log("TEST")
-    next();
-  })
-  // con.query(`select Company_ID from Company where Company_Name = "${req.body.createcompany.companyName}" `, function (err, result, fields) {
-  //   if (err) {
-  //     console.log("/company/select : " + err)
-  //     throw err
-  //   };
-  //   console.log(result)
-  //  req.CompanyID = result[0].Company_ID
-  // });
-  // next();
-
-}
-
-const createDepartment = (req, res, next) => {
-  console.log("TEST")
-  con.query(`Select Company_ID FROM Company WHERE Company_Name = "${req.body.createcompany.companyName}"`, function (err, result, fields) {
-    if (err) {
-      throw err
-    }
-    req.CompanyID = result[0].Company_ID
-  })
-
-  console.log("AAA")
-  con.query(`INSERT INTO Department (Department_Name, Company_ID) VALUES ("Administrator","${req.CompanyID}")`, function (err, result, fields) {
-    if (err) {
-      throw err
-    };
+    req.compID = result[0].Company_ID
     next();
   })
 }
 
-const insertPosition = (req, res, next) => {
-  con.query(`select Department_ID from Department where Department_Name = "Administrator" and Company_ID = "${req.CompanyID}"`, function (err, result, fields) {
+const createAdminDepartment = async (req, res, next) => {
+  let insert = `INSERT INTO Department (Department_Name, Company_ID) VALUES ?`
+  let values = [["Administrator", req.compID]]
+
+  await con.query(insert, [values], function (err, result) {
+    if (err) {
+      console.log("/company/insert : " + err)
+      throw err;
+    }
+  })
+
+  await con.query(`select Department_ID from Department where Department_Name = "Administrator" and Company_ID = "${req.compID}"`, function (err, result, fields) {
     if (err) {
       console.log("/company/select : " + err)
       throw err
     };
-    req.DepartmentID = result[0].Department_ID
+    req.departID = result[0].Department_ID
+    next();
   });
-
-  con.query(`INSERT INTO Position (Position_Name,Department_ID) VALUES ("Admin","${req.DepartmentID}")`, function (err, result, fields) {
-    if (err) {
-      throw err
-    };
-    next()
-  })
 }
 
-const insertPositionID = (req, res, next) => {
-  con.query(`select Position_ID from Position where Department_ID = "${req.Department_ID}" and Position_Name = "Admin"`, function (err, result, fields) {
+const createAdminPosition = async (req, res, next) => {
+  let insert = 'INSERT INTO `Position` (Position_Name, Department_ID) VALUES ?'
+  let values = [["Admin", req.departID]]
+
+  await con.query(insert, [values], function (err, result) {
+    if (err) {
+      console.log("/company/insert : " + err)
+      throw err;
+    }
+  })
+
+  await con.query(`select Position_ID from Position where Department_ID = "${req.departID}" and Position_Name = "Admin"`, function (err, result, fields) {
     if (err) {
       console.log("/company/select : " + err)
       throw err
     };
-    req.PositionID = result[0].Position_ID
-  });
-
-  con.query(`INSERT INTO User (Position_ID) VALUES "${req.PositionID}" where UserName = "${req.userName}" `, function (err, result, fields) {
-    if (err) {
-      throw err
-    };
+    req.posID = result[0].Position_ID
     next();
-  })
+  });
 }
 
+const updateUserAdmin = async (req, res, next) => {
+  await con.query(`UPDATE User SET Position_ID = "${req.posID}" WHERE UserName = "${req.userName}"`, function (err, result, fields) {
+    if (err) {
+      throw err;
+    }
+  })
+  next();
+}
 
+const adminMiddleWare = async (req, res, next) => {
+  con.query(`select name,surname,PhoneNumber,Email from User where UserName = "${req.userName}"`,
+    function (err, result, fields) {
+      if (result[0].name != null) {
+        con.query(`select p.Position_Name,p.Position_ID,d.Department_ID,p.Position_ID,c.Company_ID from User u JOIN Position p ON u.Position_ID = p.Position_ID JOIN Department d ON p.Department_ID = d.Department_ID JOIN Company c ON d.Company_ID = c.Company_ID where u.UserName = "${req.userName}"`,
+          function (err, results, fields) {
+            if (err) {
+              throw err;
+            }
+            if (results.length >= 1) {
+              req.userPosition = results[0].Position_Name
+              req.userPosID = results[0].Position_ID
+              req.userDepartID = results[0].Department_ID
+              req.userCompID = results[0].Company_ID
+              next();
+            } else {
+              res.json("Not have Position")
+            }
+          })
+      } else {
+        res.json("Not have Profile")
+      }
+    })
+};
 
-
-
-
-app.post('/company/insert', nameMiddleware, createCompany, createDepartment, insertPosition, insertPositionID, CheckMiddleWare, (req, res) => {
-  console.log("ACCEPT")
-  console.log(req.body.createcompany)
-  console.log(req.body.companypicture)
+app.post('/company/insert', nameMiddleware, createCompany, createAdminDepartment, createAdminPosition, updateUserAdmin, adminMiddleWare, (req, res) => {
   const payload = {
     sub: req.body.username,
     iat: new Date().getTime(),
@@ -740,17 +734,27 @@ app.post('/company/insert', nameMiddleware, createCompany, createDepartment, ins
 
 })
 
-app.get('/company/select', (req, res) => {
-  con.query('select * from Company c where c.Company_ID = 11 ', function (err, result, fields) {
-    if (err) {
-      console.log("/company/select : " + err)
+/*------------------------------Get Company------------------------------------*/
+// const getCompany = (req,res,next) => {
+//   console.log("TRTRTR")
+//   con.query(`SELECT * FROM Company WHERE Company_ID = "${req.compID}"`, function (err,result,fields){
+//     if(err){
+//       throw err
+//     }
+    
+//   })
+// }
+
+app.get('/get/company',MiddleWare, (req, res) => {
+  con.query(`SELECT * FROM Company WHERE Company_ID = "${req.compID}"`, function (err,result,fields){
+    if(err){
       throw err
-    };
+    }
     res.json(result)
-  });
+  })
 })
 
-
+/*------------------------------Connect DB------------------------------------*/
 con.connect(err => {
   app.listen(8080, () => {
     console.log('Connection success, Start server at port 8080.')
