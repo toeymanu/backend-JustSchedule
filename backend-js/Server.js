@@ -734,23 +734,30 @@ app.post('/company/insert', nameMiddleware, createCompany, createAdminDepartment
 
 })
 
-/*------------------------------Get Company------------------------------------*/
-// const getCompany = (req,res,next) => {
-//   console.log("TRTRTR")
-//   con.query(`SELECT * FROM Company WHERE Company_ID = "${req.compID}"`, function (err,result,fields){
-//     if(err){
-//       throw err
-//     }
-    
-//   })
-// }
-
 app.get('/get/company',MiddleWare, (req, res) => {
   con.query(`SELECT * FROM Company WHERE Company_ID = "${req.compID}"`, function (err,result,fields){
     if(err){
       throw err
     }
     res.json(result)
+  })
+})
+
+app.get('/get/department', MiddleWare, (req,res) => {
+  con.query(`SELECT * FROM Department WHERE Company_ID = "${req.compID}"`, function (err,result,fields){
+    if(err){
+      throw err;
+    }
+    res.json(result)
+  })
+})
+
+app.get('/get/department/user', (req,res) => {
+  con.query(`SELECT u.name,u.surname,u.Email,u.PhoneNumber,u.UserPicture,p.Position_Name FROM User u JOIN Position p ON u.Position_ID = p.Position_ID JOIN Department d ON p.Department_ID = d.Department_ID WHERE d.Department_ID = "${req.headers.departid}"`, function (err,result,fields){
+    if(err){
+      throw err;
+    }
+    res.json(result);
   })
 })
 
