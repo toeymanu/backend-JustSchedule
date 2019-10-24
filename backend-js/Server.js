@@ -753,7 +753,7 @@ app.get('/get/department', MiddleWare, (req,res) => {
 })
 
 app.get('/get/department/user', (req,res) => {
-  con.query(`SELECT u.name,u.surname,u.Email,u.PhoneNumber,u.UserPicture,p.Position_Name FROM User u JOIN Position p ON u.Position_ID = p.Position_ID JOIN Department d ON p.Department_ID = d.Department_ID WHERE d.Department_ID = "${req.headers.departid}"`, function (err,result,fields){
+  con.query(`SELECT u.User_ID,u.name,u.surname,u.Email,u.PhoneNumber,u.UserPicture,p.Position_Name FROM User u JOIN Position p ON u.Position_ID = p.Position_ID JOIN Department d ON p.Department_ID = d.Department_ID WHERE d.Department_ID = "${req.headers.departid}"`, function (err,result,fields){
     if(err){
       throw err;
     }
