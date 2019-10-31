@@ -8,7 +8,6 @@ var bodyParser = require('body-parser')
 const jwt = require("jwt-simple");
 var jwtDecode = require('jwt-decode');
 
-
 app.use(bodyParser.urlencoded({ extended: false }))
 app.use(bodyParser.json())
 
