@@ -952,6 +952,48 @@ app.post('/update/company/picture', async (req, res) => {
   })
 })
 
+let nodemailer  = require('nodemailer');
+
+app.post('/sendEmail',function (request,response){
+    let to = request.body.email
+    let subject = request.body.subject
+    let username = request.body.username
+    let password = request.body.password
+
+    const tranporter = nodemailer.createTransport({
+        service:'gmail',
+        secureConnection: true,
+        auth:{
+            user:'justscheduleplus@gmail.com',
+            pass:'jsplus1234'
+        },
+        tls:{
+            secureProtocol: "TLSv1_method"
+        }
+    })
+
+    let mailOption = {
+        from:  '"ทีมงาน JS+" <justscheduleplus@gmail.com>',
+        to: to,
+        subject: subject,
+        html: `<h3>From: ทีมงาน JS+<h3>` + "\n" +
+              `<h3>To:${to}<h3>` + "\n" +
+              `<span>This is your account</span>` + "\n" +
+              `<span>Username: ${username}</span>` + "\n" +
+              `<span>Username: ${password}</span>` + "\n" +
+              `<span>Thanks for trust our website</span>` + "\n" 
+
+    };
+    
+    tranporter.sendMail(mailOption,function(err,info){
+        if(err)
+        console.log(err)
+        else
+        response.json(info.response)
+    })
+
+})
+
 con.connect(err => {
   app.listen(8080, () => {
     console.log('Connection success, Start server at port 8080.')
