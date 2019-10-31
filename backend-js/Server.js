@@ -70,102 +70,102 @@ function userNotificationID(req, res, next) {
 }
 
 /*------------------------------Const Company------------------------------------*/
-const createCompany = async (req, res, next) => {
-  let insert = `INSERT INTO Company (Company_Name, Company_Mail,Company_Tel,Company_Picture) VALUES ?`
-  let values = [[req.body.createcompany.companyName, req.body.createcompany.companyEmail, req.body.createcompany.companyTel, req.body.companypicture]]
+// const createCompany = async (req, res, next) => {
+//   let insert = `INSERT INTO Company (Company_Name, Company_Mail,Company_Tel,Company_Picture) VALUES ?`
+//   let values = [[req.body.createcompany.companyName, req.body.createcompany.companyEmail, req.body.createcompany.companyTel, req.body.companypicture]]
 
-  await con.query(insert, [values], function (err, result) {
-    if (err) {
-      console.log("/company/insert : " + err)
-      throw err;
-    }
-  })
+//   await con.query(insert, [values], function (err, result) {
+//     if (err) {
+//       console.log("/company/insert : " + err)
+//       throw err;
+//     }
+//   })
 
-  await con.query(`Select Company_ID FROM Company WHERE Company_Name = "${req.body.createcompany.companyName}"`, function (err, result, fields) {
-    if (err) {
-      throw err
-    }
-    req.compID = result[0].Company_ID
-    next();
-  })
-}
+//   await con.query(`Select Company_ID FROM Company WHERE Company_Name = "${req.body.createcompany.companyName}"`, function (err, result, fields) {
+//     if (err) {
+//       throw err
+//     }
+//     req.compID = result[0].Company_ID
+//     next();
+//   })
+// }
 
-const createAdminDepartment = async (req, res, next) => {
-  let insert = `INSERT INTO Department (Department_Name, Company_ID) VALUES ?`
-  let values = [["Administrator", req.compID]]
+// const createAdminDepartment = async (req, res, next) => {
+//   let insert = `INSERT INTO Department (Department_Name, Company_ID) VALUES ?`
+//   let values = [["Administrator", req.compID]]
 
-  await con.query(insert, [values], function (err, result) {
-    if (err) {
-      console.log("/company/insert : " + err)
-      throw err;
-    }
-  })
+//   await con.query(insert, [values], function (err, result) {
+//     if (err) {
+//       console.log("/company/insert : " + err)
+//       throw err;
+//     }
+//   })
 
-  await con.query(`select Department_ID from Department where Department_Name = "Administrator" and Company_ID = "${req.compID}"`, function (err, result, fields) {
-    if (err) {
-      console.log("/company/select : " + err)
-      throw err
-    };
-    req.departID = result[0].Department_ID
-    next();
-  });
-}
+//   await con.query(`select Department_ID from Department where Department_Name = "Administrator" and Company_ID = "${req.compID}"`, function (err, result, fields) {
+//     if (err) {
+//       console.log("/company/select : " + err)
+//       throw err
+//     };
+//     req.departID = result[0].Department_ID
+//     next();
+//   });
+// }
 
-const createAdminPosition = async (req, res, next) => {
-  let insert = 'INSERT INTO `Position` (Position_Name, Department_ID) VALUES ?'
-  let values = [["Admin", req.departID]]
+// const createAdminPosition = async (req, res, next) => {
+//   let insert = 'INSERT INTO `Position` (Position_Name, Department_ID) VALUES ?'
+//   let values = [["Admin", req.departID]]
 
-  await con.query(insert, [values], function (err, result) {
-    if (err) {
-      console.log("/company/insert : " + err)
-      throw err;
-    }
-  })
+//   await con.query(insert, [values], function (err, result) {
+//     if (err) {
+//       console.log("/company/insert : " + err)
+//       throw err;
+//     }
+//   })
 
-  await con.query(`select Position_ID from Position where Department_ID = "${req.departID}" and Position_Name = "Admin"`, function (err, result, fields) {
-    if (err) {
-      console.log("/company/select : " + err)
-      throw err
-    };
-    req.posID = result[0].Position_ID
-    next();
-  });
-}
+//   await con.query(`select Position_ID from Position where Department_ID = "${req.departID}" and Position_Name = "Admin"`, function (err, result, fields) {
+//     if (err) {
+//       console.log("/company/select : " + err)
+//       throw err
+//     };
+//     req.posID = result[0].Position_ID
+//     next();
+//   });
+// }
 
-const updateUserAdmin = async (req, res, next) => {
-  await con.query(`UPDATE User SET Position_ID = "${req.posID}" WHERE UserName = "${req.userName}"`, function (err, result, fields) {
-    if (err) {
-      throw err;
-    }
-  })
-  next();
-}
+// const updateUserAdmin = async (req, res, next) => {
+//   await con.query(`UPDATE User SET Position_ID = "${req.posID}" WHERE UserName = "${req.userName}"`, function (err, result, fields) {
+//     if (err) {
+//       throw err;
+//     }
+//   })
+//   next();
+// }
 
-/*------------------------------Const Admin------------------------------------*/
-const adminMiddleWare = async (req, res, next) => {
-  con.query(`select name,surname,PhoneNumber,Email from User where UserName = "${req.userName}"`,
-    function (err, result, fields) {
-      if (result[0].name != null) {
-        con.query(`select p.Position_Name,p.Position_ID,d.Department_ID,p.Position_ID,c.Company_ID from User u JOIN Position p ON u.Position_ID = p.Position_ID JOIN Department d ON p.Department_ID = d.Department_ID JOIN Company c ON d.Company_ID = c.Company_ID where u.UserName = "${req.userName}"`,
-          function (err, results, fields) {
-            if (err) {
-              throw err;
-            }
-            if (results.length >= 1) {
-              req.userPosition = results[0].Position_Name
-              req.userPosID = results[0].Position_ID
-              req.userDepartID = results[0].Department_ID
-              req.userCompID = results[0].Company_ID
-              next();
-            } else {
-              res.json("Not have Position")
-            }
-          })
-      } else {
-        res.json("Not have Profile")
-      }
-    })
-};
+// /*------------------------------Const Admin------------------------------------*/
+// const adminMiddleWare = async (req, res, next) => {
+//   con.query(`select name,surname,PhoneNumber,Email from User where UserName = "${req.userName}"`,
+//     function (err, result, fields) {
+//       if (result[0].name != null) {
+//         con.query(`select p.Position_Name,p.Position_ID,d.Department_ID,p.Position_ID,c.Company_ID from User u JOIN Position p ON u.Position_ID = p.Position_ID JOIN Department d ON p.Department_ID = d.Department_ID JOIN Company c ON d.Company_ID = c.Company_ID where u.UserName = "${req.userName}"`,
+//           function (err, results, fields) {
+//             if (err) {
+//               throw err;
+//             }
+//             if (results.length >= 1) {
+//               req.userPosition = results[0].Position_Name
+//               req.userPosID = results[0].Position_ID
+//               req.userDepartID = results[0].Department_ID
+//               req.userCompID = results[0].Company_ID
+//               next();
+//             } else {
+//               res.json("Not have Position")
+//             }
+//           })
+//       } else {
+//         res.json("Not have Profile")
+//       }
+//     })
+// };
 
 const LoginMiddleWare = (req, res, next) => {
   con.query(`select UserName, Password from User where UserName = "${req.body.username}"`,
@@ -934,7 +934,7 @@ app.post('/update/department', async (req, res) => {
 
 app.post('/update/company', async (req, res) => {
   console.log(req.body.companyid,req.body.companyname,req.body.companyemail,req.body.companytelno)
-   con.query(`UPDATE Company SET Company_Name = "${req.body.companyname}",Company_Mail="${req.body.companyemail}",Company_Tel = "${req.body.companytelno}",Company_Picture = "${req.body.companyimg}"  WHERE Company_ID = "${req.body.companyid}" `, function (err, result, fields) {
+   con.query(`UPDATE Company SET Company_Name = "${req.body.companyname}",Company_Mail="${req.body.companyemail}",Company_Tel = "${req.body.companytelno}" WHERE Company_ID = "${req.body.companyid}" `, function (err, result, fields) {
      if (err) {
        throw err;
      }
