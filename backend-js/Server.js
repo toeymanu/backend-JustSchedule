@@ -8,6 +8,7 @@ var bodyParser = require('body-parser')
 const jwt = require("jwt-simple");
 var jwtDecode = require('jwt-decode');
 
+
 app.use(bodyParser.urlencoded({ extended: false }))
 app.use(bodyParser.json())
 
@@ -847,7 +848,111 @@ app.get('/get/department/user', (req, res) => {
   })
 })
 
-/*------------------------------Connect DB------------------------------------*/
+app.get('/get/position', (req,res) => {
+  con.query(`SELECT Position_ID,Position_Name FROM Position WHERE Department_ID = "${req.headers.departid}"`, function (err,result,fields){
+    if(err){
+      throw err;
+    }
+    res.json(result);
+  })
+})
+
+/////////////////////////////////////////////
+app.post('/insert/position', async (req, res) => {
+  // console.log(req.body)
+  // console.log(req.body.departid)
+  // console.log(req.body.position)
+  // req.body.position.map(e => {
+  //   console.log(e)
+  // })
+
+  let insert = 'INSERT INTO `Position` (Position_Name,Department_ID) VALUES ?'
+  let values = req.body.position.map(position => {
+    return [position, req.body.departid];
+  });
+  console.log(values)
+  con.query(insert, [values], function (err, result) {
+    if (err) {
+      console.log("/period : " + err)
+      throw err;
+    }
+    res.json(result)
+  })
+})
+
+app.post('/update/position', async (req, res) => {
+ 
+  console.log(req.body)
+  con.query(`UPDATE \`Position\` SET Position_Name = "${req.body.position}" WHERE Position_ID = "${req.body.departid}"`, function (err, result, fields) {
+    if (err) {
+      throw err;
+    }
+    res.json({ status: 'success' })
+  })
+})
+
+app.post('/update/user/position', async (req, res) => {
+ 
+  console.log(req.body.newposition,req.body.userid)
+  con.query(`UPDATE User SET Position_ID = "${req.body.newposition}" WHERE User_ID = "${req.body.userid}"`, function (err, result, fields) {
+    if (err) {
+      throw err;
+    }
+    res.json({ status: 'success' })
+  })
+})
+
+app.post('/insert/user', async (req, res) => {
+  console.log(req.body.user,req.body.positionid)
+  
+  
+
+  let insert = 'INSERT INTO User (name,surname,Email,PhoneNumber,Username,Password,Position_ID) VALUES ?'
+  let values = req.body.user.map(user => {
+                return [user.name,user.surname,user.email,user.telno,user.username,user.password,user.positionid];
+               });
+
+  console.log(values)
+  con.query(insert, [values], function (err, result) {
+    if (err) {
+      console.log("/insert/user : " + err)
+      throw err;
+    }
+    res.json(result)
+  })
+})
+
+app.post('/update/department', async (req, res) => {
+ 
+  console.log(req.body.departid,req.body.departname,req.body.departtelno)
+  con.query(`UPDATE Department SET Department_Name = "${req.body.departname}",Department_TelNo = "${req.body.departtelno}"  WHERE Department_ID = "${req.body.departid}" `, function (err, result, fields) {
+    if (err) {
+      throw err;
+    }
+    res.json({ status: 'success' })
+  })
+})
+
+app.post('/update/company', async (req, res) => {
+  console.log(req.body.companyid,req.body.companyname,req.body.companyemail,req.body.companytelno)
+   con.query(`UPDATE Company SET Company_Name = "${req.body.companyname}",Company_Mail="${req.body.companyemail}",Company_Tel = "${req.body.companytelno}",Company_Picture = "${req.body.companyimg}"  WHERE Company_ID = "${req.body.companyid}" `, function (err, result, fields) {
+     if (err) {
+       throw err;
+     }
+     res.json({ status: 'success' })
+   })
+ })
+
+app.post('/update/company/picture', async (req, res) => {
+ console.log(req.body.companyid,req.body.companyname,req.body.companyemail,req.body.companytelno)
+  con.query(`UPDATE Company SET Company_Name = "${req.body.companyname}",Company_Mail="${req.body.companyemail}",Company_Tel = "${req.body.companytelno}",Company_Picture = "${req.body.companyimg}"  WHERE Company_ID = "${req.body.companyid}" `, function (err, result, fields) {
+    if (err) {
+      throw err;
+    }
+    res.json({ status: 'success' })
+  })
+})
+
 con.connect(err => {
   app.listen(8080, () => {
     console.log('Connection success, Start server at port 8080.')
