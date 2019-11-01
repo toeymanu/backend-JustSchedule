@@ -1,3 +1,4 @@
+let nodemailer  = require('nodemailer');
 exports.sendEmail = (req, res) => {
     let to = req.body.email
     let subject = req.body.subject
