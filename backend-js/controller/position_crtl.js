@@ -15,6 +15,15 @@ exports.selectPosition = (req, res) => {
     })
 }
 
+exports.selectPositionForGenerate = (req, res) => {
+    con.query(`SELECT Position_ID,Position_Name FROM Position WHERE Department_ID = "${req.depID}"`, function (err, result, fields) {
+        if (err) {
+            throw err;
+        }
+        res.json(result);
+    })
+}
+
 exports.insertPosition = (req, res) => {
     let insert = 'INSERT INTO `Position` (Position_Name,Department_ID) VALUES ?'
     let values = req.body.position.map(position => {
@@ -35,5 +44,12 @@ exports.updatePosition = (req, res) => {
             throw err;
         }
         res.json({ status: 'success' })
+    })
+}
+
+exports.selectAllConditionByDepartment = (req,res) => {
+    con.query(`SELECT * FROM Department d JOIN Position p ON d.Department_ID = p.Department_ID JOIN PositionCondition c ON p.Position_ID = c.Position_ID JOIN PositionDayOff o ON c.PositionCondition_ID = o.PositionCondition_ID WHERE p.Department_ID = ${req.depID}`, function (err,result,fields){
+        if(err) throw err;
+        res.json(result)
     })
 }

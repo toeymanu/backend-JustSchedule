@@ -27,6 +27,7 @@ app.use("/company", router.route_company);
 app.use("/department", router.route_department);
 app.use("/period",router.route_period);
 app.use("/position", router.route_position);
+app.use("/email", router.route_email)
 
 con.connect(err => {
     app.listen(8080, () => {

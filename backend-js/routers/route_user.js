@@ -8,6 +8,8 @@ router.get('/', middleware_crtl.MiddleWare, user_crtl.selectUserInSchedule);
 router.get('/name', middleware_crtl.nameMiddleware, user_crtl.selectNameForHeader);
 router.get('/profile', middleware_crtl.nameMiddleware, user_crtl.selectUserProfile);
 
+router.get('admin/notification', user_crtl.getAllNotificationByDepartment);
+
 router.get('/manager/notification', middleware_crtl.MiddleWare, middleware_crtl.managerNotificationID, user_crtl.selectManagerNotification);
 router.get('/manager/notification/absent', middleware_crtl.MiddleWare, middleware_crtl.managerNotificationID, user_crtl.selectManagerAbsentNotification);
 router.get('/staff/notification', middleware_crtl.MiddleWare, middleware_crtl.userNotificationID, user_crtl.selectStaffNotification);
@@ -24,6 +26,8 @@ router.post('/request/absent', middleware_crtl.insertAbsentRequest, middleware_c
 
 router.post('/insert', user_crtl.insertUserFromExcel);
 router.post('/register', middleware_crtl.regisMiddleware, user_crtl.register);
+
+router.post('/remove', user_crtl.removeUser);
 
 router.post('/login/authenticate', middleware_crtl.loginMiddleWare, user_crtl.loginNewUser);
 router.post('/login/authenticated', middleware_crtl.checkMiddleWare, user_crtl.loginOldUser);

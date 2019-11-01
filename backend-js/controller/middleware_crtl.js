@@ -448,3 +448,60 @@ exports.insertManagerPosition = (req, res) => {
         res.json(result)
     })
 }
+
+// exports.removeUserInNotification = (req,res) => {
+//     console.log(req.body)
+//         con.query(`DELETE From Notification Where User_ID = "${}"`, function (err, result, fields) {
+//           if (err) {
+//             throw err;
+//           }
+//           next();
+//         })
+// }
+
+// exports.getRequestIDForRemove = (req,res) => {
+
+//     con.query(`DELETE From Notification Where User_ID = "${}"`, function (err, result, fields) {
+//         if (err) {
+//           throw err;
+//         }
+//         next();
+//       })
+// }
+
+exports.insertPositionCondition = async (req,res,next) => {
+    let insert = 'INSERT INTO PositionCondition (PeriodPerDay,PersonPerDay,Position_ID) VALUES ?'
+    let values = [[req.body.periodPerDay,req.body.personPerDay,req.body.positionID[0]]]
+    console.log(values)
+
+    await con.query(insert, [values], function (err, result) {
+        if (err) {
+            throw err;
+        }
+        next()
+    })
+}
+
+exports.selectPositionConditionID = (req,res,next) => {
+    con.query(`SELECT PositionCondition_ID FROM PositionCondition WHERE Position_ID = "${req.body.positionID[0]}"`, function (err, result, fields) {
+        if (err) {
+            throw err;
+        }
+        req.positionConID = result[0].PositionCondition_ID;
+        next();
+    })
+}
+
+exports.insertPositionDayOff = async (req,res) => {
+    let insert = 'INSERT INTO PositionDayOff (PositionDayOff_Reason,Day,Month,PositionCondition_ID) VALUES ?'
+    let values = req.body.holiday.map(day => {
+        return [day.reason, day.date,req.body.month,req.positionConID]
+    })
+
+    await con.query(insert, [values], function (err, result) {
+        if (err) {
+            throw err;
+        }
+        res.json("insert success")
+    })
+}
