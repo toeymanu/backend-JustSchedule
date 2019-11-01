@@ -9,9 +9,7 @@ var jwtDecode = require('jwt-decode');
 
 exports.MiddleWare = (req, res, next) => {
     if (req.headers.tkauth != "null" || req.headers.tkauth != "undefined") {
-        console.log(req.headers.tkauth)
         var decoded = jwtDecode(req.headers.tkauth);
-        console.log(decoded)
         req.userName = decoded.sub;
         req.posID = decoded.posID;
         req.depID = decoded.depID;
@@ -410,7 +408,6 @@ exports.adminMiddleWare = async (req, res, next) => {
             if (result[0].name != null) {
                 con.query(`select p.Position_Name,p.Position_ID,d.Department_ID,p.Position_ID,c.Company_ID from User u JOIN Position p ON u.Position_ID = p.Position_ID JOIN Department d ON p.Department_ID = d.Department_ID JOIN Company c ON d.Company_ID = c.Company_ID where u.UserName = "${req.userName}"`,
                     function (err, results, fields) {
-                        console.log(result)
                         if (err) {
                             throw err;
                         }
