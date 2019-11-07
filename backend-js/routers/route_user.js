@@ -34,5 +34,6 @@ router.post('/login/authenticated', middleware_crtl.checkMiddleWare, user_crtl.l
 
 router.post('/profile/update', middleware_crtl.nameMiddleware, user_crtl.updateUserProfile);
 router.post('/position/update', user_crtl.updateUserPosition);
+router.post('/password/update', user_crtl.updateUserPassword);
 
 module.exports = router;

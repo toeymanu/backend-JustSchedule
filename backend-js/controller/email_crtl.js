@@ -25,7 +25,7 @@ exports.sendEmail = (req, res) => {
             `<h3>To:${to}<h3>` + "\n" +
             `<span>This is your account</span>` + "\n" +
             `<span>Username: ${username}</span>` + "\n" +
-            `<span>Username: ${password}</span>` + "\n" +
+            `<span>Password: ${password}</span>` + "\n" +
             `<span>Thanks for trust our website</span>` + "\n"
 
     };

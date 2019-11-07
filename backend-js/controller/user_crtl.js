@@ -75,7 +75,7 @@ exports.selectStaffNotification = (req, res) => {
 }
 
 exports.selectUserProfile = (req, res) => {
-    con.query(`select name,surname,Email,PhoneNumber,UserPicture from User WHERE UserName = "${req.userName}"`,
+    con.query(`select User_ID,name,surname,Email,PhoneNumber,UserPicture,Password from User WHERE UserName = "${req.userName}"`,
         function (err, result, fields) {
             if (err) {
                 throw err;
@@ -218,4 +218,14 @@ exports.removeUser = (req,res) => {
           }
           res.json("remove success")
         })
+}
+
+exports.updateUserPassword = (req, res) => {
+    con.query(`UPDATE User SET Password = "${req.body.newpassword}" WHERE User_ID = "${req.body.userid}"`, function (err, result, fields) {
+        if (err) {
+            throw err;
+        }
+        res.json(result)
+    })
+    // console.log("Edit password success")
 }
