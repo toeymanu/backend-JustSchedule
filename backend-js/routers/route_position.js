@@ -9,6 +9,7 @@ router.get('/generate/condition', middleware_crtl.MiddleWare, position_crtl.sele
 
 router.post('/insert', position_crtl.insertPosition);
 router.post('/update', position_crtl.updatePosition);
-router.post('/generate/insert', middleware_crtl.insertPositionCondition, middleware_crtl.selectPositionConditionID,middleware_crtl.insertPositionDayOff);
+router.post('/generate/insert', position_crtl.insertPositionDayOff);
+router.post('/generate/delete', position_crtl.deletePositionDayOff);
 
 module.exports = router;

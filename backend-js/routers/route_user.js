@@ -14,10 +14,10 @@ router.get('/manager/notification', middleware_crtl.MiddleWare, middleware_crtl.
 router.get('/manager/notification/absent', middleware_crtl.MiddleWare, middleware_crtl.managerNotificationID, user_crtl.selectManagerAbsentNotification);
 router.get('/staff/notification', middleware_crtl.MiddleWare, middleware_crtl.userNotificationID, user_crtl.selectStaffNotification);
 router.post('/manager/notification/insert', middleware_crtl.MiddleWare, middleware_crtl.getManagerIDForNotification, user_crtl.insertManagerAbsentNotification);
-router.post('/manager/exchangenotification/approve', middleware_crtl.managerApproveNotification, middleware_crtl.changeSchedule, middleware_crtl.insertApproveNotiStaff);
-router.post('/manager/exchangenotification/reject', middleware_crtl.rejectNotification, middleware_crtl.insertRejectNotiStaff);
-router.post('/manager/absentnotification/approve', middleware_crtl.managerApproveAbsentNoti, middleware_crtl.absentDeleteRequestFor, middleware_crtl.deleteSchedule, middleware_crtl.insertApproveAbsentNotiStaff);
-router.post('/manager/absentnotification/reject', middleware_crtl.managerRejectAbsentNotification, middleware_crtl.insertRejectAbsentNotiStaff);
+router.post('/manager/exchangenotification/approve', middleware_crtl.selectUserEmail, middleware_crtl.managerApproveNotification, middleware_crtl.changeSchedule, middleware_crtl.insertApproveNotiStaff);
+router.post('/manager/exchangenotification/reject', middleware_crtl.selectUserEmail, middleware_crtl.rejectNotification, middleware_crtl.insertRejectNotiStaff);
+router.post('/manager/absentnotification/approve', middleware_crtl.selectUserEmail, middleware_crtl.managerApproveAbsentNoti, middleware_crtl.absentDeleteRequestFor, middleware_crtl.deleteSchedule, middleware_crtl.insertApproveAbsentNotiStaff);
+router.post('/manager/absentnotification/reject', middleware_crtl.selectUserEmail, middleware_crtl.managerRejectAbsentNotification, middleware_crtl.insertRejectAbsentNotiStaff);
 
 
 router.get('/request', middleware_crtl.MiddleWare, user_crtl.selectRequestByDepartment);

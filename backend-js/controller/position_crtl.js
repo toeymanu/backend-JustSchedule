@@ -48,8 +48,37 @@ exports.updatePosition = (req, res) => {
 }
 
 exports.selectAllConditionByDepartment = (req,res) => {
-    con.query(`SELECT * FROM Department d JOIN Position p ON d.Department_ID = p.Department_ID JOIN PositionCondition c ON p.Position_ID = c.Position_ID JOIN PositionDayOff o ON c.PositionCondition_ID = o.PositionCondition_ID WHERE p.Department_ID = ${req.depID}`, function (err,result,fields){
+    con.query(`SELECT p.Position_Name,o.PositionDayOff_ID,o.PositionDayOff_Reason, o.Day, o.Month FROM Department d JOIN Position p ON d.Department_ID = p.Department_ID JOIN PositionDayOff o ON p.Position_ID = o.Position_ID WHERE p.Department_ID = ${req.depID}`, function (err,result,fields){
         if(err) throw err;
         res.json(result)
+    })
+}
+
+exports.insertPositionDayOff = async (req,res) => {
+    let insert = 'INSERT INTO PositionDayOff (PositionDayOff_Reason,Day,Month,Position_ID) VALUES ?'
+    let values = req.body.holiday.map(day => {
+        return [day.reason, day.date,req.body.month,req.body.positionID[0]]
+    })
+
+    await con.query(insert, [values], function (err, result) {
+        if (err) {
+            throw err;
+        }
+        res.json("insert success")
+    })
+}
+
+exports.deletePositionDayOff = async (req,res) => {
+    let deleted = `DELETE FROM PositionDayOff WHERE PositionDayOff_ID IN (?)`
+    let values = req.body.condition.map(condition => {
+        return [condition.PositionDayOff_ID];
+    });
+
+    await con.query(deleted, [values], function (err, result) {
+        if (err) {
+            console.log("/request : " + err)
+            throw err;
+        }
+        res.json("Delete Success")
     })
 }

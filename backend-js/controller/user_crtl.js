@@ -227,5 +227,4 @@ exports.updateUserPassword = (req, res) => {
         }
         res.json(result)
     })
-    // console.log("Edit password success")
 }
