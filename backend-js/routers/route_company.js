@@ -9,7 +9,7 @@ router.get('/admin', middleware_crtl.MiddleWare, company_crtl.selectCompany);
 
 router.post('/update', company_crtl.updateCompanyDetail);
 router.post('/update/picture', company_crtl.updateCompanyPicture);
-router.post('/insert', middleware_crtl.nameMiddleware, middleware_crtl.checkCompanyNameMiddleware,middleware_crtl.createCompany, middleware_crtl.createAdminDepartment, middleware_crtl.createAdminPosition, middleware_crtl.updateUserPositionAdmin, middleware_crtl.adminMiddleWare, company_crtl.loginAdmin);
+router.post('/insert', middleware_crtl.nameMiddleware, middleware_crtl.checkCompanyNameMiddleware, middleware_crtl.createCompany, middleware_crtl.createAdminDepartment, middleware_crtl.createAdminPosition, middleware_crtl.updateUserPositionAdmin, middleware_crtl.adminMiddleWare, company_crtl.loginAdmin);
 
 
 module.exports = router;

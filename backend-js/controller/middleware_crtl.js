@@ -97,7 +97,9 @@ exports.loginMiddleWare = (req, res, next) => {
                 throw err;
             }
             if (result.length >= 1) {
-                if (req.body.username === result[0].UserName && req.body.password == result[0].Password) {
+                let hashPassword = result[0].Password
+                let match = bcrypt.compareSync(req.body.password, hashPassword)
+                if (req.body.username === result[0].UserName && match) {
                     next();
                 } else {
                     res.json("Wrong Username or Password")
@@ -139,6 +141,16 @@ exports.regisMiddleware = (req, res, next) => {
             next();
         } else {
             res.json("Username is already exists!!!");
+        }
+    })
+}
+
+exports.checkCompanyNameMiddleware = (req, res, next) => {
+    con.query(`select Company_Name from Company where Company_Name = "${req.body.createcompany.companyName}"`, function (err, result, fields) {
+        if (result.length < 1) {
+            next();
+        } else {
+            res.json("This company is already exists");
         }
     })
 }
@@ -469,134 +481,56 @@ exports.insertManagerPosition = (req, res) => {
 //         next();
 //       })
 // }
-exports.selectPositionConditionID = (req,res,next) => {
-    con.query(`SELECT PositionCondition_ID FROM PositionCondition WHERE Position_ID = "${req.body.positionID[0]}"`, function (err, result, fields) {
-        if (err) {
-            throw err;
-        }
-        req.positionConID = result[0].PositionCondition_ID;
+
+exports.setAbsentUserEmail = (req, res, next) => {
+    if (req.body.approve !== undefined) {
+        req.email = req.body.approve.Email
+        req.resultAbsent = "Your Absent Request has been approve."
+        req.name = req.body.approve.name + " " + req.body.approve.surname
+        req.date = req.body.approve.Date
+        req.month = req.body.approve.Month
+        req.period = req.body.approve.Period_Time_One + " - " + req.body.approve.Period_Time_Two
         next();
-    })
-}
-
-exports.setAbsentUserEmail = (req,res,next) => {
-    if(req.body.approve !== undefined){
-            req.email = req.body.approve.Email
-            req.resultAbsent = "Your Absent Request has been approve."
-            req.name = req.body.approve.name + " " + req.body.approve.surname
-            req.date = req.body.approve.Date
-            req.month = req.body.approve.Month
-            req.period = req.body.approve.Period_Time_One +" - " + req.body.approve.Period_Time_Two
-            next();
-    }else{
-            req.email = req.body.reject.Email
-            req.resultAbsent = "Your Absent Request has been reject."
-            req.name = req.body.reject.name + " " + req.body.reject.surname
-            req.date = req.body.reject.Date
-            req.month = req.body.reject.Month
-            req.period = req.body.reject.Period_Time_One +" - " + req.body.reject.Period_Time_Two
-            next();
+    } else {
+        req.email = req.body.reject.Email
+        req.resultAbsent = "Your Absent Request has been reject."
+        req.name = req.body.reject.name + " " + req.body.reject.surname
+        req.date = req.body.reject.Date
+        req.month = req.body.reject.Month
+        req.period = req.body.reject.Period_Time_One + " - " + req.body.reject.Period_Time_Two
+        next();
     }
 }
 
-exports.insertPositionDayOff = async (req,res) => {
-    let insert = 'INSERT INTO PositionDayOff (PositionDayOff_Reason,Day,Month,PositionCondition_ID) VALUES ?'
-    let values = req.body.holiday.map(day => {
-        return [day.reason, day.date,req.body.month,req.positionConID]
-    })
+exports.setExchangeUserEmail = (req, res, next) => {
+    if (req.body.approve !== undefined) {
+        req.email = req.body.approve[0].Email
+        req.resultExchange = "Your Exchange Request has been approve."
+        req.name = req.body.approve[0].name + " " + req.body.approve[0].surname
+        req.date = req.body.approve[0].Date
+        req.month = req.body.approve[0].Month
+        req.period = req.body.approve[0].Period_Time_One + " - " + req.body.approve[0].Period_Time_Two
 
-    await con.query(insert, [values], function (err, result) {
-        if (err) {
-            throw err;
-        }
-        res.json("insert success")
-    })
-}
+        req.emailReq = req.body.approve[1].Email
+        req.resultExchangeReq = "Your Period has been exchange"
+        req.nameReq = req.body.approve[1].name + " " + req.body.approve[1].surname
+        req.dateReq = req.body.approve[1].Date
+        req.monthReq = req.body.approve[1].Month
+        req.periodReq = req.body.approve[1].Period_Time_One + " - " + req.body.approve[1].Period_Time_Two
+        req.approve = true
+        next();
+    } else {
+        req.email = req.body.reject[0].Email
+        req.resultAbsent = "Your Exchange Request has been reject."
+        req.name = req.body.reject[0].name + " " + req.body.reject[0].surname
+        req.date = req.body.reject[0].Date
+        req.month = req.body.reject[0].Month
+        req.period = req.body.reject[0].Period_Time_One + " - " + req.body.reject[0].Period_Time_Two
 
-exports.checkCompanyNameMiddleware = (req, res, next) => {
-    con.query(`select Company_Name from Company where Company_Name = "${req.body.createcompany.companyName}"`, function (err, result, fields) {
-        if (result.length < 1) {
-            next();
-        } else {
-            res.json("This company is already exists");
-        }
-    })
-}
-
-exports.selectUserEmail = (req,res,next) => {
-    console.log(req.body)
-}
-
-exports.setExchangeUserEmail = (req,res,next) => {
-    if(req.body.approve !== undefined){
-            req.email = req.body.approve[0].Email
-            req.resultExchange = "Your Exchange Request has been approve."
-            req.name = req.body.approve[0].name + " " + req.body.approve[0].surname
-            req.date = req.body.approve[0].Date
-            req.month = req.body.approve[0].Month
-            req.period = req.body.approve[0].Period_Time_One +" - " + req.body.approve[0].Period_Time_Two
-
-            req.emailReq = req.body.approve[1].Email
-            req.resultExchangeReq = "Your Period has been exchange"
-            req.nameReq = req.body.approve[1].name + " " + req.body.approve[1].surname
-            req.dateReq = req.body.approve[1].Date
-            req.monthReq = req.body.approve[1].Month
-            req.periodReq = req.body.approve[1].Period_Time_One +" - " + req.body.approve[1].Period_Time_Two
-            req.approve = true
-            next();
-    }else{
-            req.email = req.body.reject[0].Email
-            req.resultAbsent = "Your Exchange Request has been reject."
-            req.name = req.body.reject[0].name + " " + req.body.reject[0].surname
-            req.date = req.body.reject[0].Date
-            req.month = req.body.reject[0].Month
-            req.period = req.body.reject[0].Period_Time_One +" - " + req.body.reject[0].Period_Time_Two
-
-            req.nameReq = req.body.reject[1].name + " " + req.body.reject[1].surname
-            req.dateReq = req.body.reject[1].Date
-            req.monthReq = req.body.reject[1].Month
-            req.periodReq = req.body.reject[1].Period_Time_One +" - " + req.body.reject[1].Period_Time_Two
-            next();
+        req.nameReq = req.body.reject[1].name + " " + req.body.reject[1].surname
+        req.dateReq = req.body.reject[1].Date
+        req.monthReq = req.body.reject[1].Month
+        req.periodReq = req.body.reject[1].Period_Time_One + " - " + req.body.reject[1].Period_Time_Two
+        next();
     }
 }
-
-// const loginMiddleWare = (req, res, next) => {
-//   let cipherPassword = SELECT s.staffPassword FROM Staffs s WHERE s.staffEmail = "${req.body.staffEmail}"
-//       // ไปเอา password ที่ encrypt ใน DB ออกมา
-
-//   con.query(cipherPassword, function (err, result) {
-//      // ไปเอา password ที่ encrypt ใน DB ออกมา
-
-//     if (err) throw err;
-//     let hashPassword = result[0].staffPassword // password ที่ encrypt 
-
-//     let match = bcrypt.compareSync(req.body.staffPassword, hashPassword) // นำ password ที่ login กับ password ที่ encrypt มา compare กัน
-//     console.log(match);
-    
-//     if(match){ // ถ้า true ก็ login ได้ (แล้วแต่ว่าจะให้ทำไรต่อ)
-//       con.query(select firstName, lastName, staffEmail,staffRole from Staffs where staffEmail = "${req.body.staffEmail}", function (err, result, fields) {
-//         if (err) throw err;
-    
-//         if(result.length !== 0){
-//           if(req.body.staffEmail === result[0].staffEmail){
-//             req.staffRole = result[0].staffRole
-//             req.firstName = result[0].firstName
-//             req.lastName = result[0].lastName
-    
-//             next();
-//           }
-//           else{
-//             res.json("wrong")
-//           }
-//         }
-//         else{
-//           res.json("wrong")
-//         }
-//       });
-//     }else{
-//       res.json("wrong")
-//     }
-
-//   })
-
-//  }

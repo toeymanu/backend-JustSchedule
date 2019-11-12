@@ -192,7 +192,7 @@ exports.sendExchangeEmail = async (req, res, next) => {
 }
 
 exports.sendExchangeAutoReject = async (req, res, next) => {
-    
+
     let subject = "Your Exchange Request has been auto reject."
     const tranporter = nodemailer.createTransport({
         service: 'gmail',
@@ -227,7 +227,7 @@ exports.sendExchangeAutoReject = async (req, res, next) => {
 }
 
 exports.sendAbsentAutoReject = async (req, res, next) => {
-    
+
     let subject = "Your Absent Request has been auto reject."
     const tranporter = nodemailer.createTransport({
         service: 'gmail',
