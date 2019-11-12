@@ -43,7 +43,7 @@ exports.selectNameForHeader = (req, res) => {
 }
 
 exports.selectManagerNotification = (req, res) => {
-    con.query(`select u.User_ID,u.name,u.surname,f.Request_ID, s.Schedule_ID, s.Period_ID, s.Date, s.Month, p.Period_Time_One, p.Period_Time_Two From Notification n JOIN Request r ON n.Request_ID = r.Request_ID JOIN RequestStatus rs ON r.RequestStatus_ID = rs.RequestStatus_ID JOIN RequestFor f ON r.Request_ID = f.Request_ID JOIN Schedule s ON f.Schedule_ID = s.Schedule_ID JOIN Period p ON s.Period_ID = p.Period_ID JOIN User u ON s.User_ID = u.User_ID WHERE n.User_ID = "${req.managerNotiID}" and rs.RequestStatus_Name = "pending" and r.RequestType_ID = 2 Order by  n.Notification_ID DESC, f.Request_ID ASC, f.RequestFor_ID ASC`,
+    con.query(`select u.User_ID,u.name,u.surname,u.Email,f.Request_ID, s.Schedule_ID, s.Period_ID, s.Date, s.Month, p.Period_Time_One, p.Period_Time_Two From Notification n JOIN Request r ON n.Request_ID = r.Request_ID JOIN RequestStatus rs ON r.RequestStatus_ID = rs.RequestStatus_ID JOIN RequestFor f ON r.Request_ID = f.Request_ID JOIN Schedule s ON f.Schedule_ID = s.Schedule_ID JOIN Period p ON s.Period_ID = p.Period_ID JOIN User u ON s.User_ID = u.User_ID WHERE n.User_ID = "${req.managerNotiID}" and rs.RequestStatus_Name = "pending" and r.RequestType_ID = 2 Order by  n.Notification_ID DESC, f.Request_ID ASC, f.RequestFor_ID ASC`,
         function (err, result, fields) {
             if (err) {
                 console.log("/notification " + err)
@@ -54,7 +54,7 @@ exports.selectManagerNotification = (req, res) => {
 }
 
 exports.selectManagerAbsentNotification = (req, res) => {
-    con.query(`select u.User_ID,u.name,u.surname,f.Request_ID, s.Schedule_ID, s.Period_ID, s.Date, s.Month, p.Period_Time_One, p.Period_Time_Two From Notification n JOIN Request r ON n.Request_ID = r.Request_ID JOIN RequestStatus rs ON r.RequestStatus_ID = rs.RequestStatus_ID JOIN RequestFor f ON r.Request_ID = f.Request_ID JOIN Schedule s ON f.Schedule_ID = s.Schedule_ID JOIN Period p ON s.Period_ID = p.Period_ID JOIN User u ON s.User_ID = u.User_ID WHERE n.User_ID = "${req.managerNotiID}" and rs.RequestStatus_Name = "pending" and r.RequestType_ID = 1 Order by n.Notification_ID DESC`,
+    con.query(`select u.User_ID,u.name,u.surname,u.Email,f.Request_ID, s.Schedule_ID, s.Period_ID, s.Date, s.Month, p.Period_Time_One, p.Period_Time_Two From Notification n JOIN Request r ON n.Request_ID = r.Request_ID JOIN RequestStatus rs ON r.RequestStatus_ID = rs.RequestStatus_ID JOIN RequestFor f ON r.Request_ID = f.Request_ID JOIN Schedule s ON f.Schedule_ID = s.Schedule_ID JOIN Period p ON s.Period_ID = p.Period_ID JOIN User u ON s.User_ID = u.User_ID WHERE n.User_ID = "${req.managerNotiID}" and rs.RequestStatus_Name = "pending" and r.RequestType_ID = 1 Order by n.Notification_ID DESC`,
         function (err, result, fields) {
             if (err) {
                 console.log("/notification " + err)
@@ -116,13 +116,15 @@ exports.loginOldUser = (req, res) => {
 }
 
 exports.register = (req, res) => {
-    con.query(`INSERT INTO User (UserName, Password) VALUES ("${req.body.register.username}","${req.body.register.password}")`, function (err, result, fields) {
+    bcrypt.hash(req.body.register.password, 10, function(err, hashPassword) {
+    con.query(`INSERT INTO User (UserName, Password) VALUES ("${req.body.register.username}","${hashPassword}")`, function (err, result, fields) {
         if (err) {
             console.log("/register : " + err)
             throw err
         };
         res.json(result);
     })
+})
 }
 
 exports.selectRequestByDepartment = (req, res) => {
