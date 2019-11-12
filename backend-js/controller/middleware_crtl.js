@@ -155,6 +155,16 @@ exports.checkCompanyNameMiddleware = (req, res, next) => {
     })
 }
 
+exports.checkPasswordMiddleware = (req,res,next) => {
+    let hashPassword = req.body.password
+    let match = bcrypt.compareSync(req.body.oldpassword, hashPassword)
+    if(match){
+        next();
+    }else{
+        res.json("Old password is incorrect");
+    }
+}
+
 exports.insertAbsentRequest = (req, res, next) => {
     let date = Date.now().toString();
     let insert = `INSERT INTO Request (Request_Date,RequestStatus_ID,RequestType_ID) VALUES ?`

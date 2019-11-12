@@ -117,15 +117,15 @@ exports.loginOldUser = (req, res) => {
 }
 
 exports.register = (req, res) => {
-    bcrypt.hash(req.body.register.password, 10, function(err, hashPassword) {
-    con.query(`INSERT INTO User (UserName, Password) VALUES ("${req.body.register.username}","${hashPassword}")`, function (err, result, fields) {
-        if (err) {
-            console.log("/register : " + err)
-            throw err
-        };
-        res.json(result);
+    bcrypt.hash(req.body.register.password, 10, function (err, hashPassword) {
+        con.query(`INSERT INTO User (UserName, Password) VALUES ("${req.body.register.username}","${hashPassword}")`, function (err, result, fields) {
+            if (err) {
+                console.log("/register : " + err)
+                throw err
+            };
+            res.json(result);
+        })
     })
-})
 }
 
 exports.selectRequestByDepartment = (req, res) => {
@@ -183,7 +183,9 @@ exports.insertManagerAbsentNotification = (req, res) => {
 exports.insertUserFromExcel = (req, res) => {
     let insert = 'INSERT INTO User (name,surname,Email,PhoneNumber,Username,Password,Position_ID) VALUES ?'
     let values = req.body.user.map(user => {
-        return [user.name, user.surname, user.email, user.telno, user.username, user.password, user.positionid];
+        bcrypt.hash(user.password, 10, function (err, hashPassword) {
+        return [user.name, user.surname, user.email, user.telno, user.username, hashPassword, user.positionid];
+        })
     });
     con.query(insert, [values], function (err, result) {
         if (err) {
@@ -203,31 +205,33 @@ exports.updateUserPosition = (req, res) => {
     })
 }
 
-exports.getAllNotificationByDepartment = (req,res) => {
+exports.getAllNotificationByDepartment = (req, res) => {
     con.query(`select u.User_ID,u.name,u.surname,f.Request_ID, s.Schedule_ID, s.Period_ID, s.Date, s.Month, p.Period_Time_One, p.Period_Time_Two From Notification n JOIN Request r ON n.Request_ID = r.Request_ID JOIN RequestStatus rs ON r.RequestStatus_ID = rs.RequestStatus_ID JOIN RequestFor f ON r.Request_ID = f.Request_ID JOIN Schedule s ON f.Schedule_ID = s.Schedule_ID JOIN Period p ON s.Period_ID = p.Period_ID JOIN User u ON s.User_ID = u.User_ID WHERE n.User_ID = "${req.body.manager[0].User_ID}" and rs.RequestStatus_Name = "pending" and r.RequestType_ID = 2 Order by  n.Notification_ID DESC, f.Request_ID ASC, f.RequestFor_ID ASC`,
-    function (err, result, fields) {
-        if (err) {
-            console.log("/notification " + err)
-            throw err;
-        }
-        res.json(result);
-    })
-}
-
-exports.removeUser = (req,res) => {
-        con.query(`UPDATE User SET Position_ID = null WHERE User_ID = "${req.body.user.User_ID}"`, function (err, result, fields) {
-          if (err) {
-            throw err;
-          }
-          res.json("remove success")
+        function (err, result, fields) {
+            if (err) {
+                console.log("/notification " + err)
+                throw err;
+            }
+            res.json(result);
         })
 }
 
-exports.updateUserPassword = (req, res) => {
-    con.query(`UPDATE User SET Password = "${req.body.newpassword}" WHERE User_ID = "${req.body.userid}"`, function (err, result, fields) {
+exports.removeUser = (req, res) => {
+    con.query(`UPDATE User SET Position_ID = null WHERE User_ID = "${req.body.user.User_ID}"`, function (err, result, fields) {
         if (err) {
             throw err;
         }
-        res.json(result)
+        res.json("remove success")
+    })
+}
+
+exports.updateUserPassword = (req, res) => {
+    bcrypt.hash(req.body.newpassword, 10, function (err, hashPassword) {
+        con.query(`UPDATE User SET Password = "${hashPassword}" WHERE User_ID = "${req.body.userid}"`, function (err, result, fields) {
+            if (err) {
+                throw err;
+            }
+            res.json(result)
+        })
     })
 }
