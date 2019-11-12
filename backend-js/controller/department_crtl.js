@@ -28,7 +28,7 @@ exports.selectDepartment = (req, res) => {
 }
 
 exports.updateDepartment = (req, res) => {
-    con.query(`UPDATE Department SET Department_Name = "${req.body.departname}",Department_TelNo = "${req.body.departtelno}"  WHERE Department_ID = "${req.body.departid}" `, function (err, result, fields) {
+    con.query(`UPDATE Department SET Department_Name = "${req.body.departname}",Department_TelNo = "${req.body.departtelno}",Department_Picture = "${req.body.departimg}"  WHERE Department_ID = "${req.body.departid}" `, function (err, result, fields) {
         if (err) {
             throw err;
         }
