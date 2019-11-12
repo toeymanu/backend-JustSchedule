@@ -99,6 +99,7 @@ exports.loginMiddleWare = (req, res, next) => {
             if (result.length >= 1) {
                 let hashPassword = result[0].Password
                 let match = bcrypt.compareSync(req.body.password, hashPassword)
+                // if (req.body.username === result[0].UserName && req.body.password === result[0].Password) {
                 if (req.body.username === result[0].UserName && match) {
                     next();
                 } else {
@@ -155,12 +156,12 @@ exports.checkCompanyNameMiddleware = (req, res, next) => {
     })
 }
 
-exports.checkPasswordMiddleware = (req,res,next) => {
+exports.checkPasswordMiddleware = (req, res, next) => {
     let hashPassword = req.body.password
     let match = bcrypt.compareSync(req.body.oldpassword, hashPassword)
-    if(match){
+    if (match) {
         next();
-    }else{
+    } else {
         res.json("Old password is incorrect");
     }
 }
@@ -266,7 +267,7 @@ exports.insertApproveNotiStaff = (req, res) => {
         return ["Request is Approve", notification.Request_ID, notification.User_ID]
     })
 
-    con.query(insert, [values], function (err, result) {
+    con.query(insert, [values], function (err, result, fields) {
         if (err) {
             console.log("/insert/notification/manager : " + err)
             throw err;
@@ -341,9 +342,39 @@ exports.managerRejectAbsentNotification = (req, res, next) => {
     })
 }
 
+exports.managerAutoRejectAbsentNotification = async (req, res, next) => {
+    let update = `UPDATE Request SET RequestStatus_ID = 3 WHERE Request_ID IN (?)`
+    let values = req.body.reject.map(reject => {
+        return [reject.Request_ID];
+    });
+
+    await con.query(update, [values], function (err, result) {
+        if (err) {
+            console.log("/request : " + err)
+            throw err;
+        }
+    })
+    next();
+}
+
 exports.insertRejectAbsentNotiStaff = async (req, res, next) => {
     let insert = `INSERT INTO Notification (Notification_Description, Request_ID,User_ID) VALUES ?`
     let values = [["Request Absent is Reject", req.body.reject.Request_ID, req.body.reject.User_ID]]
+
+    await con.query(insert, [values], function (err, result) {
+        if (err) {
+            console.log("/insert/notification/manager : " + err)
+            throw err;
+        }
+        res.json("Reject Success");
+    })
+}
+
+exports.insertAutoRejectAbsentNotiStaff = async (req, res, next) => {
+    let insert = `INSERT INTO Notification (Notification_Description, Request_ID,User_ID) VALUES ?`
+    let values = req.body.reject.map(reject => {
+        return ["Request Absent is autoreject", reject.Request_ID, reject.User_ID]
+    })
 
     await con.query(insert, [values], function (err, result) {
         if (err) {

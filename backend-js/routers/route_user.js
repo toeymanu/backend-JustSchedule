@@ -21,7 +21,7 @@ router.post('/manager/absentnotification/approve', middleware_crtl.setAbsentUser
 router.post('/manager/absentnotification/reject', middleware_crtl.setAbsentUserEmail, email_crtl.sendAbsentEmail, middleware_crtl.managerRejectAbsentNotification, middleware_crtl.insertRejectAbsentNotiStaff);
 
 router.post('/manager/exchangenotification/autoreject', email_crtl.sendExchangeAutoReject, middleware_crtl.rejectNotification, middleware_crtl.insertRejectNotiStaff);
-router.post('/manager/absentnotification/autoreject', email_crtl.sendAbsentAutoReject, middleware_crtl.managerRejectAbsentNotification, middleware_crtl.insertRejectAbsentNotiStaff);
+router.post('/manager/absentnotification/autoreject', email_crtl.sendAbsentAutoReject, middleware_crtl.managerAutoRejectAbsentNotification, middleware_crtl.insertAutoRejectAbsentNotiStaff);
 
 router.get('/request', middleware_crtl.MiddleWare, user_crtl.selectRequestByDepartment);
 router.post('/request/exchangeschedule', middleware_crtl.insertExchangeScheduleRequest, middleware_crtl.getRequestID, user_crtl.insertExchangeScheduleInRequestFor);
