@@ -469,6 +469,15 @@ exports.insertManagerPosition = (req, res) => {
 //         next();
 //       })
 // }
+exports.selectPositionConditionID = (req,res,next) => {
+    con.query(`SELECT PositionCondition_ID FROM PositionCondition WHERE Position_ID = "${req.body.positionID[0]}"`, function (err, result, fields) {
+        if (err) {
+            throw err;
+        }
+        req.positionConID = result[0].PositionCondition_ID;
+        next();
+    })
+}
 
 exports.setAbsentUserEmail = (req,res,next) => {
     if(req.body.approve !== undefined){
@@ -488,6 +497,34 @@ exports.setAbsentUserEmail = (req,res,next) => {
             req.period = req.body.reject.Period_Time_One +" - " + req.body.reject.Period_Time_Two
             next();
     }
+}
+
+exports.insertPositionDayOff = async (req,res) => {
+    let insert = 'INSERT INTO PositionDayOff (PositionDayOff_Reason,Day,Month,PositionCondition_ID) VALUES ?'
+    let values = req.body.holiday.map(day => {
+        return [day.reason, day.date,req.body.month,req.positionConID]
+    })
+
+    await con.query(insert, [values], function (err, result) {
+        if (err) {
+            throw err;
+        }
+        res.json("insert success")
+    })
+}
+
+exports.checkCompanyNameMiddleware = (req, res, next) => {
+    con.query(`select Company_Name from Company where Company_Name = "${req.body.createcompany.companyName}"`, function (err, result, fields) {
+        if (result.length < 1) {
+            next();
+        } else {
+            res.json("This company is already exists");
+        }
+    })
+}
+
+exports.selectUserEmail = (req,res,next) => {
+    console.log(req.body)
 }
 
 exports.setExchangeUserEmail = (req,res,next) => {
@@ -562,4 +599,4 @@ exports.setExchangeUserEmail = (req,res,next) => {
 
 //   })
 
-//  };
+//  }
