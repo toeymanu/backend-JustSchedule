@@ -6,7 +6,7 @@ var con = mysql.createConnection({
     database: process.env.DB_DATABASE
 });
 const jwt = require("jwt-simple");
-const bcrypt = require('bcrypt');
+const bcrypt = require('bcryptjs');
 
 exports.selectUserInSchedule = (req, res) => {
     let loginName = null;

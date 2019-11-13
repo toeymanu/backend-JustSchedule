@@ -6,7 +6,7 @@ var con = mysql.createConnection({
     database: process.env.DB_DATABASE
 });
 var jwtDecode = require('jwt-decode');
-const bcrypt = require('bcrypt');
+const bcrypt = require('bcryptjs');
 
 exports.MiddleWare = (req, res, next) => {
     if (req.headers.tkauth != "null" || req.headers.tkauth != "undefined") {
