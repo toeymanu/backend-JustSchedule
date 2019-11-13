@@ -182,18 +182,31 @@ exports.insertManagerAbsentNotification = (req, res) => {
 
 exports.insertUserFromExcel = (req, res) => {
     let insert = 'INSERT INTO User (name,surname,Email,PhoneNumber,Username,Password,Position_ID) VALUES ?'
-    let values = req.body.user.map(user => {
-        bcrypt.hash(user.password, 10, function (err, hashPassword) {
-        return [user.name, user.surname, user.email, user.telno, user.username, hashPassword, user.positionid];
+    let checkArr = []
+    let arrLength = req.body.user.length
+
+    var encryptPassword = new Promise((resolve, reject) => {
+        req.body.user.forEach(async (value, index, array) => {
+            await bcrypt.hash(value.password, 10, function (err, hashPassword) {
+                checkArr.push(hashPassword);
+                req.body.user[checkArr.length - 1].password = hashPassword
+                if (arrLength === checkArr.length) resolve();
+            })
+        });
+    });
+
+    encryptPassword.then(() => {
+        let values = req.body.user.map(user => {
+            return [user.name, user.surname, user.email, user.telno, user.username, user.password, user.positionid];
+        });
+        con.query(insert, [values], function (err, result) {
+            if (err) {
+                console.log("/insert/user : " + err)
+                throw err;
+            }
+            res.json(result)
         })
     });
-    con.query(insert, [values], function (err, result) {
-        if (err) {
-            console.log("/insert/user : " + err)
-            throw err;
-        }
-        res.json(result)
-    })
 }
 
 exports.updateUserPosition = (req, res) => {
